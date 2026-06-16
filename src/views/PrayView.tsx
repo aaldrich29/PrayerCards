@@ -4,6 +4,8 @@ import type { Card } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { buildStack } from '../lib/stack';
 import { SwipeDeck } from '../components/SwipeDeck';
+import { CardForm } from '../components/CardForm';
+import { NoteDialog } from '../components/NoteDialog';
 
 type Scope = { kind: 'all' } | { kind: 'category'; id: string } | { kind: 'person'; id: string };
 
@@ -13,6 +15,8 @@ export function PrayView() {
   const people = useAppStore((s) => s.people);
   const mode = useAppStore((s) => s.settings.cadenceMode);
   const prayForCard = useAppStore((s) => s.prayForCard);
+  const archiveCard = useAppStore((s) => s.archiveCard);
+  const markAnswered = useAppStore((s) => s.markAnswered);
 
   const [scope, setScope] = useState<Scope>({ kind: 'all' });
   const [queue, setQueue] = useState<Card[]>([]);
@@ -20,6 +24,8 @@ export function PrayView() {
   const [initialCount, setInitialCount] = useState(0);
   const [prayedCount, setPrayedCount] = useState(0);
   const [sessionKey, setSessionKey] = useState(0);
+  const [creating, setCreating] = useState(false);
+  const [answering, setAnswering] = useState<Card | null>(null);
 
   const filter = useMemo(() => {
     if (scope.kind === 'category') return { categoryId: scope.id };
@@ -47,6 +53,25 @@ export function PrayView() {
 
   function handleSkip(card: Card) {
     setQueue((q) => q.filter((c) => c.id !== card.id));
+  }
+
+  // Remove a card from the deck without counting it as "prayed" (archive/answer).
+  function removeFromSession(id: string) {
+    setQueue((q) => q.filter((c) => c.id !== id));
+    setSessionIds((ids) => ids.filter((x) => x !== id));
+    setInitialCount((n) => Math.max(0, n - 1));
+  }
+
+  function handleArchive(card: Card) {
+    archiveCard(card.id);
+    removeFromSession(card.id);
+  }
+
+  // Mark answered from the deck: open the note dialog; on save, record + remove.
+  function handleAnswerSaved(note: string) {
+    if (!answering) return;
+    markAnswered(answering.id, note);
+    removeFromSession(answering.id);
   }
 
   // Replay the exact cards from this session, regardless of whether they're
@@ -84,7 +109,13 @@ export function PrayView() {
               {initialCount - queue.length + 1} of {initialCount}
             </div>
             <div className="relative mx-auto h-[26rem] w-full max-w-sm">
-              <SwipeDeck cards={queue} onPray={handlePray} onSkip={handleSkip} />
+              <SwipeDeck
+                cards={queue}
+                onPray={handlePray}
+                onSkip={handleSkip}
+                onArchive={handleArchive}
+                onAnswer={(card) => setAnswering(card)}
+              />
             </div>
             <div className="mt-5 flex items-center justify-center gap-10 text-xs text-faint">
               <span>← Later</span>
@@ -93,6 +124,27 @@ export function PrayView() {
           </>
         )}
       </div>
+
+      {/* Quick-add a card without leaving Pray */}
+      <button
+        onClick={() => setCreating(true)}
+        className="safe-bottom fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-3xl text-accentink shadow-lg"
+        aria-label="Add card"
+      >
+        +
+      </button>
+
+      {creating && <CardForm onClose={() => setCreating(false)} />}
+      {answering && (
+        <NoteDialog
+          title="Mark as answered"
+          label="Add a note about how this prayer was answered (optional)."
+          placeholder="e.g. Got the job — thank you, Lord!"
+          saveLabel="Mark answered"
+          onSave={handleAnswerSaved}
+          onClose={() => setAnswering(null)}
+        />
+      )}
     </div>
   );
 }

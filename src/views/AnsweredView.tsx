@@ -1,11 +1,25 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { Card } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { formatDate } from '../lib/dates';
+import { NoteDialog } from '../components/NoteDialog';
+
+const DAY = 86400000;
+
+function durationText(card: Card): string | null {
+  if (!card.answeredAt) return null;
+  const days = Math.max(0, Math.round((card.answeredAt - card.createdAt) / DAY));
+  if (days < 1) return 'within a day';
+  if (days < 7) return `over ${days} days`;
+  if (days < 60) return `over ${Math.round(days / 7)} weeks`;
+  return `over ${Math.round(days / 30)} months`;
+}
 
 export function AnsweredView() {
   const cards = useAppStore((s) => s.cards);
   const reopenCard = useAppStore((s) => s.reopenCard);
   const updateCard = useAppStore((s) => s.updateCard);
+  const [editing, setEditing] = useState<Card | null>(null);
 
   const answered = useMemo(
     () => cards.filter((c) => c.status === 'answered').sort((a, b) => (b.answeredAt ?? 0) - (a.answeredAt ?? 0)),
@@ -30,20 +44,18 @@ export function AnsweredView() {
           <ul className="space-y-3">
             {answered.map((c) => (
               <li key={c.id} className="rounded-2xl border border-border bg-surface p-4" style={{ borderLeft: '3px solid #10b981' }}>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-ink">{c.title}</p>
-                  {c.answeredAt && <span className="shrink-0 text-xs text-emerald-500">{formatDate(c.answeredAt)}</span>}
-                </div>
+                <p className="font-medium text-ink">{c.title}</p>
+
                 {c.answeredNote && <p className="mt-2 text-sm italic text-muted">“{c.answeredNote}”</p>}
-                <p className="mt-2 text-xs text-faint">Prayed {c.prayCount}× before it was answered.</p>
+
+                <dl className="mt-3 space-y-1 border-t border-border pt-3 text-xs text-muted">
+                  <Row label="Started praying" value={formatDate(c.createdAt)} />
+                  {c.answeredAt && <Row label="Answered" value={`${formatDate(c.answeredAt)}${durationText(c) ? ` · ${durationText(c)}` : ''}`} />}
+                  <Row label="Times prayed" value={`${c.prayCount}`} />
+                </dl>
+
                 <div className="mt-3 flex gap-3 text-xs">
-                  <button
-                    onClick={() => {
-                      const note = prompt('Testimony / how it was answered', c.answeredNote ?? '');
-                      if (note !== null) updateCard(c.id, { answeredNote: note.trim() || undefined });
-                    }}
-                    className="text-accent"
-                  >
+                  <button onClick={() => setEditing(c)} className="text-accent">
                     {c.answeredNote ? 'Edit note' : 'Add note'}
                   </button>
                   <button onClick={() => reopenCard(c.id)} className="text-muted">
@@ -55,6 +67,27 @@ export function AnsweredView() {
           </ul>
         )}
       </div>
+
+      {editing && (
+        <NoteDialog
+          title="Answered note"
+          label="How was this prayer answered? Leave yourself a note to look back on."
+          placeholder="e.g. After months of waiting, the surgery went perfectly."
+          initial={editing.answeredNote ?? ''}
+          saveLabel="Save note"
+          onSave={(note) => updateCard(editing.id, { answeredNote: note || undefined })}
+          onClose={() => setEditing(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt>{label}</dt>
+      <dd className="text-ink">{value}</dd>
     </div>
   );
 }

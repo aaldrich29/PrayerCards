@@ -14,6 +14,8 @@ interface Props {
   cards: Card[]; // remaining queue; cards[0] is on top
   onPray: (card: Card) => void;
   onSkip: (card: Card) => void;
+  onArchive: (card: Card) => void;
+  onAnswer: (card: Card) => void;
 }
 
 const SWIPE_THRESHOLD = 120;
@@ -24,10 +26,12 @@ function DraggableCard({
   card,
   onPray,
   onSkip,
+  actions,
 }: {
   card: Card;
   onPray: () => void;
   onSkip: () => void;
+  actions: { onArchive: () => void; onAnswer: () => void };
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-220, 220], [-14, 14]);
@@ -50,7 +54,7 @@ function DraggableCard({
       animate="center"
       exit="exit"
     >
-      <PrayCard card={card} />
+      <PrayCard card={card} actions={actions} />
 
       {/* Swipe hints */}
       <motion.div
@@ -69,7 +73,7 @@ function DraggableCard({
   );
 }
 
-export function SwipeDeck({ cards, onPray, onSkip }: Props) {
+export function SwipeDeck({ cards, onPray, onSkip, onArchive, onAnswer }: Props) {
   const [dir, setDir] = useState(1);
   const front = cards[0];
   const next = cards[1];
@@ -96,6 +100,7 @@ export function SwipeDeck({ cards, onPray, onSkip }: Props) {
               setDir(-1);
               onSkip(front);
             }}
+            actions={{ onArchive: () => onArchive(front), onAnswer: () => onAnswer(front) }}
           />
         )}
       </AnimatePresence>

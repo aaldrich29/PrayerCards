@@ -32,6 +32,15 @@ interface StoreState extends AppData {
   markAnswered: (id: string, note?: string) => void;
   reopenCard: (id: string) => void;
 
+  // Bulk operations (Manage Cards)
+  bulkArchive: (ids: string[]) => void;
+  bulkMarkAnswered: (ids: string[], note?: string) => void;
+  bulkSetCategory: (ids: string[], categoryId?: string) => void;
+  bulkSetCadence: (ids: string[], cadence: Cadence) => void;
+  bulkDelete: (ids: string[]) => void;
+  /** Set order = position for the given ids (used by drag-to-reorder within a group). */
+  reorderCards: (orderedIds: string[]) => void;
+
   // Categories
   addCategory: (name: string, color: string, defaultCadence?: Cadence) => Category;
   updateCategory: (id: string, patch: Partial<Category>) => void;
@@ -148,6 +157,45 @@ export const useAppStore = create<StoreState>()(
               c.id === id ? { ...c, status: 'active', answeredAt: undefined, answeredNote: undefined } : c,
             ),
           })),
+
+        bulkArchive: (ids) => {
+          const set = new Set(ids);
+          mutate((d) => ({ cards: d.cards.map((c) => (set.has(c.id) ? { ...c, status: 'archived' } : c)) }));
+        },
+
+        bulkMarkAnswered: (ids, note) => {
+          const set = new Set(ids);
+          const now = Date.now();
+          mutate((d) => ({
+            cards: d.cards.map((c) =>
+              set.has(c.id)
+                ? { ...c, status: 'answered', answeredAt: now, answeredNote: note?.trim() || c.answeredNote }
+                : c,
+            ),
+          }));
+        },
+
+        bulkSetCategory: (ids, categoryId) => {
+          const set = new Set(ids);
+          mutate((d) => ({ cards: d.cards.map((c) => (set.has(c.id) ? { ...c, categoryId } : c)) }));
+        },
+
+        bulkSetCadence: (ids, cadence) => {
+          const set = new Set(ids);
+          mutate((d) => ({ cards: d.cards.map((c) => (set.has(c.id) ? { ...c, cadence } : c)) }));
+        },
+
+        bulkDelete: (ids) => {
+          const set = new Set(ids);
+          mutate((d) => ({ cards: d.cards.filter((c) => !set.has(c.id)) }));
+        },
+
+        reorderCards: (orderedIds) => {
+          const orderById = new Map(orderedIds.map((id, i) => [id, i]));
+          mutate((d) => ({
+            cards: d.cards.map((c) => (orderById.has(c.id) ? { ...c, order: orderById.get(c.id)! } : c)),
+          }));
+        },
 
         addCategory: (name, color, defaultCadence) => {
           const cat: Category = { id: newId(), name: name.trim(), color, defaultCadence };

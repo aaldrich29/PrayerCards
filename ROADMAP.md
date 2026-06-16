@@ -24,6 +24,15 @@ Implemented:
 - **Stats / prayer tracking**: dedicated Stats tab — total prayers, current streak, this-week count,
   active days, a 30-day activity chart, and most-prayed-for ranking. Per-card 14-day sparkline on the
   card back. All derived from each card's `prayLog` timestamps (`src/lib/stats.ts`, unit-tested).
+- **Manage Cards at scale**: search (title/notes/people), filters (category/person/type/cadence),
+  sort (manual/recently-prayed/most-prayed/added/A–Z), collapsible category sections, multi-select
+  with bulk actions (archive, mark answered, recategorize, set cadence, delete), and drag-to-reorder
+  within a category.
+- **Answered timeline**: marking answered (from Pray, Manage Cards, anywhere) prompts for a note;
+  the Answered box shows when you started praying, when it was answered (+ duration), times prayed,
+  and your note. Notes are editable later.
+- **In-deck actions**: the back of a prayer card has Archive and Mark answered; a quick-add button in
+  Pray lets you jot a new request without leaving the deck.
 - **PWA**: installable + offline. Deploys to GitHub Pages via `.github/workflows/deploy.yml`.
 
 ## Key architecture decisions
@@ -45,10 +54,10 @@ Implemented:
 - Show the signed-in Google account email (add `email` scope or call userinfo).
 
 ### Prayer experience
-- **Drag-to-reorder** cards within a category (the `order` field already exists).
 - **Snooze** vs "later": optional "skip for the rest of this period" on left-swipe.
-- **Search & tags** across cards.
+- **Tags** across cards (free-form), complementing categories.
 - Up-swipe = prayed (in addition to right-swipe), down = skip.
+- Optional tap "✓ Prayed" button as an alternative to swiping (desktop/accessibility).
 - Stats: monthly/yearly views, per-category breakdown, calendar heatmap.
 
 ### Content

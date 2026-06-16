@@ -1,103 +1,503 @@
 import { useMemo, useState } from 'react';
-import type { Card } from '../types';
+import { Reorder } from 'framer-motion';
+import type { Card, Cadence } from '../types';
 import { useAppStore } from '../store/useAppStore';
-import { cadenceLabel } from '../lib/cadence';
+import { cadenceLabel, CADENCE_PRESETS, cadenceKey, cadenceFromKey } from '../lib/cadence';
 import { CardForm } from '../components/CardForm';
+import { NoteDialog } from '../components/NoteDialog';
+
+type Sort = 'manual' | 'recent' | 'mostPrayed' | 'added' | 'alpha';
+type CadenceFilter = 'all' | Cadence['kind'];
+
+const SORTS: { value: Sort; label: string }[] = [
+  { value: 'manual', label: 'Manual order' },
+  { value: 'recent', label: 'Recently prayed' },
+  { value: 'mostPrayed', label: 'Most prayed' },
+  { value: 'added', label: 'Recently added' },
+  { value: 'alpha', label: 'A–Z' },
+];
+
+const UNCATEGORIZED = '__none__';
 
 export function CardsView() {
   const cards = useAppStore((s) => s.cards);
   const categories = useAppStore((s) => s.categories);
+  const people = useAppStore((s) => s.people);
   const archiveCard = useAppStore((s) => s.archiveCard);
   const markAnswered = useAppStore((s) => s.markAnswered);
+  const reorderCards = useAppStore((s) => s.reorderCards);
 
   const [editing, setEditing] = useState<Card | null>(null);
   const [creating, setCreating] = useState(false);
+  const [answering, setAnswering] = useState<Card | null>(null);
+
+  const [search, setSearch] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [fCategory, setFCategory] = useState<string>('all');
+  const [fPerson, setFPerson] = useState<string>('all');
+  const [fType, setFType] = useState<'all' | 'request' | 'verse'>('all');
+  const [fCadence, setFCadence] = useState<CadenceFilter>('all');
+  const [sort, setSort] = useState<Sort>('manual');
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [reorderMode, setReorderMode] = useState(false);
+
+  const peopleById = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
+
+  const hasFilters = !!search.trim() || fCategory !== 'all' || fPerson !== 'all' || fType !== 'all' || fCadence !== 'all';
 
   const active = useMemo(() => cards.filter((c) => c.status === 'active'), [cards]);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return active.filter((c) => {
+      if (fCategory !== 'all' && (c.categoryId ?? UNCATEGORIZED) !== fCategory) return false;
+      if (fPerson !== 'all' && !c.personIds.includes(fPerson)) return false;
+      if (fType !== 'all' && c.type !== fType) return false;
+      if (fCadence !== 'all' && c.cadence.kind !== fCadence) return false;
+      if (q) {
+        const hay = [c.title, c.body, c.verseRef, ...c.personIds.map((id) => peopleById.get(id)?.name)]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [active, search, fCategory, fPerson, fType, fCadence, peopleById]);
+
+  const sortCards = useMemo(() => {
+    const cmp: Record<Sort, (a: Card, b: Card) => number> = {
+      manual: (a, b) => a.order - b.order,
+      recent: (a, b) => (b.lastPrayedAt ?? 0) - (a.lastPrayedAt ?? 0),
+      mostPrayed: (a, b) => b.prayCount - a.prayCount,
+      added: (a, b) => b.createdAt - a.createdAt,
+      alpha: (a, b) => a.title.localeCompare(b.title),
+    };
+    return (list: Card[]) => [...list].sort(cmp[sort]);
+  }, [sort]);
+
   const groups = useMemo(() => {
     const byCat = new Map<string, Card[]>();
-    for (const c of active) {
-      const key = c.categoryId ?? '__none__';
-      const arr = byCat.get(key) ?? [];
-      arr.push(c);
-      byCat.set(key, arr);
+    for (const c of filtered) {
+      const key = c.categoryId ?? UNCATEGORIZED;
+      (byCat.get(key) ?? byCat.set(key, []).get(key)!).push(c);
     }
     const ordered: { id: string; name: string; color: string; cards: Card[] }[] = [];
     for (const cat of categories) {
       const list = byCat.get(cat.id);
       if (list?.length) ordered.push({ id: cat.id, name: cat.name, color: cat.color, cards: sortCards(list) });
     }
-    const none = byCat.get('__none__');
-    if (none?.length) ordered.push({ id: '__none__', name: 'Uncategorized', color: '#94a3b8', cards: sortCards(none) });
+    const none = byCat.get(UNCATEGORIZED);
+    if (none?.length) ordered.push({ id: UNCATEGORIZED, name: 'Uncategorized', color: '#94a3b8', cards: sortCards(none) });
     return ordered;
-  }, [active, categories]);
+  }, [filtered, categories, sortCards]);
+
+  const reorderable = reorderMode; // reorder within each category by manual order
+
+  function toggleSelect(id: string) {
+    setSelected((s) => {
+      const next = new Set(s);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function exitSelect() {
+    setSelectMode(false);
+    setSelected(new Set());
+  }
+
+  function toggleCollapse(id: string) {
+    setCollapsed((s) => {
+      const next = new Set(s);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   return (
     <div className="flex h-full flex-col">
       <header className="safe-top flex items-center justify-between px-4 pb-2 pt-4">
-        <h1 className="text-2xl font-bold text-ink">Cards</h1>
-        <span className="text-sm text-muted">{active.length} active</span>
+        <div>
+          <h1 className="text-2xl font-bold text-ink">Cards</h1>
+          <span className="text-xs text-muted">{active.length} active</span>
+        </div>
+        <div className="flex gap-3 text-sm">
+          {selectMode ? (
+            <button onClick={exitSelect} className="text-muted">
+              Cancel
+            </button>
+          ) : reorderMode ? (
+            <button onClick={() => setReorderMode(false)} className="font-medium text-accent">
+              Done
+            </button>
+          ) : (
+            <>
+              <button onClick={() => setReorderMode(true)} className="text-muted" disabled={active.length < 2}>
+                Reorder
+              </button>
+              <button onClick={() => setSelectMode(true)} className="text-accent">
+                Select
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-24">
+      {/* Search + filters (hidden while reordering/selecting to reduce noise) */}
+      {!reorderMode && !selectMode && (
+        <div className="px-4">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search cards, notes, people…"
+            className="w-full rounded-xl border border-border bg-surface2 px-3 py-2 text-sm text-ink placeholder-faint focus:border-accent focus:outline-none"
+          />
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              className={`rounded-full px-3 py-1 text-xs ${hasFilters ? 'bg-accent text-accentink' : 'bg-surface2 text-muted'}`}
+            >
+              Filters{hasFilters ? ' •' : ''}
+            </button>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as Sort)}
+              className="rounded-full bg-surface2 px-3 py-1 text-xs text-muted focus:outline-none"
+            >
+              {SORTS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            {hasFilters && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setFCategory('all');
+                  setFPerson('all');
+                  setFType('all');
+                  setFCadence('all');
+                }}
+                className="text-xs text-faint"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {showFilters && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <FilterSelect value={fCategory} onChange={setFCategory} label="Category">
+                <option value="all">All categories</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+                <option value={UNCATEGORIZED}>Uncategorized</option>
+              </FilterSelect>
+              <FilterSelect value={fPerson} onChange={setFPerson} label="Person">
+                <option value="all">Anyone</option>
+                {people.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </FilterSelect>
+              <FilterSelect value={fType} onChange={(v) => setFType(v as 'all' | 'request' | 'verse')} label="Type">
+                <option value="all">All types</option>
+                <option value="request">Requests</option>
+                <option value="verse">Verses</option>
+              </FilterSelect>
+              <FilterSelect value={fCadence} onChange={(v) => setFCadence(v as CadenceFilter)} label="Cadence">
+                <option value="all">Any cadence</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="everyNDays">Custom</option>
+                <option value="none">No schedule</option>
+              </FilterSelect>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-2 flex-1 overflow-y-auto px-4 pb-28">
         {groups.length === 0 ? (
           <div className="mt-20 text-center text-muted">
-            <p className="text-lg">No cards yet.</p>
-            <p className="mt-1 text-sm">Tap + to add your first prayer card.</p>
+            <p className="text-lg">{active.length === 0 ? 'No cards yet.' : 'No cards match.'}</p>
+            <p className="mt-1 text-sm">{active.length === 0 ? 'Tap + to add your first prayer card.' : 'Try clearing filters.'}</p>
           </div>
         ) : (
-          groups.map((g) => (
-            <section key={g.id} className="mb-6">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: g.color }} />
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{g.name}</h2>
-                <span className="text-xs text-faint">{g.cards.length}</span>
-              </div>
-              <ul className="space-y-2">
-                {g.cards.map((c) => (
-                  <li key={c.id} className="rounded-2xl border border-border bg-surface">
-                    <button onClick={() => setEditing(c)} className="block w-full px-4 py-3 text-left">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium text-ink">{c.title}</p>
-                        {c.type === 'verse' && <span className="shrink-0 text-xs text-emerald-500">verse</span>}
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted">
-                        {cadenceLabel(c.cadence)} · prayed {c.prayCount}×
-                      </p>
-                    </button>
-                    <div className="flex border-t border-border text-xs">
-                      <button onClick={() => markAnswered(c.id)} className="flex-1 py-2 text-emerald-500 active:bg-surface2">
-                        Answered ✓
-                      </button>
-                      <span className="w-px bg-border" />
-                      <button onClick={() => archiveCard(c.id)} className="flex-1 py-2 text-muted active:bg-surface2">
-                        Archive
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))
+          groups.map((g) => {
+            const isCollapsed = collapsed.has(g.id);
+            return (
+              <section key={g.id} className="mb-5">
+                <button
+                  onClick={() => toggleCollapse(g.id)}
+                  className="mb-2 flex w-full items-center gap-2 text-left"
+                >
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: g.color }} />
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{g.name}</h2>
+                  <span className="text-xs text-faint">{g.cards.length}</span>
+                  <span className="ml-auto text-faint">{isCollapsed ? '▸' : '▾'}</span>
+                </button>
+
+                {!isCollapsed &&
+                  (reorderable ? (
+                    <Reorder.Group
+                      axis="y"
+                      values={g.cards}
+                      onReorder={(vals) => reorderCards(vals.map((c) => c.id))}
+                      className="space-y-2"
+                    >
+                      {g.cards.map((c) => (
+                        <Reorder.Item key={c.id} value={c} className="rounded-2xl border border-border bg-surface">
+                          <div className="flex items-center gap-3 px-4 py-3">
+                            <span className="text-faint">⠿</span>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-ink">{c.title}</p>
+                              <p className="text-xs text-muted">{cadenceLabel(c.cadence)}</p>
+                            </div>
+                          </div>
+                        </Reorder.Item>
+                      ))}
+                    </Reorder.Group>
+                  ) : (
+                    <ul className="space-y-2">
+                      {g.cards.map((c) => (
+                        <CardRow
+                          key={c.id}
+                          card={c}
+                          selectMode={selectMode}
+                          selected={selected.has(c.id)}
+                          onToggleSelect={() => toggleSelect(c.id)}
+                          onEdit={() => setEditing(c)}
+                          onArchive={() => archiveCard(c.id)}
+                          onAnswered={() => setAnswering(c)}
+                          personNames={c.personIds.map((id) => peopleById.get(id)?.name).filter(Boolean) as string[]}
+                        />
+                      ))}
+                    </ul>
+                  ))}
+              </section>
+            );
+          })
         )}
       </div>
 
-      {/* Floating add button */}
-      <button
-        onClick={() => setCreating(true)}
-        className="safe-bottom fixed bottom-24 left-1/2 z-40 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-accent text-3xl text-accentink shadow-lg"
-        aria-label="Add card"
-      >
-        +
-      </button>
+      {/* Bulk action bar */}
+      {selectMode && <BulkBar selected={selected} onDone={exitSelect} />}
+
+      {/* Floating add button (hidden in select/reorder modes) */}
+      {!selectMode && !reorderMode && (
+        <button
+          onClick={() => setCreating(true)}
+          className="safe-bottom fixed bottom-24 left-1/2 z-40 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-accent text-3xl text-accentink shadow-lg"
+          aria-label="Add card"
+        >
+          +
+        </button>
+      )}
 
       {creating && <CardForm onClose={() => setCreating(false)} />}
       {editing && <CardForm card={editing} onClose={() => setEditing(null)} />}
+      {answering && (
+        <NoteDialog
+          title="Mark as answered"
+          label="Add a note about how this prayer was answered (optional)."
+          placeholder="e.g. Got the job — thank you, Lord!"
+          saveLabel="Mark answered"
+          onSave={(note) => markAnswered(answering.id, note)}
+          onClose={() => setAnswering(null)}
+        />
+      )}
     </div>
   );
 }
 
-function sortCards(list: Card[]): Card[] {
-  return [...list].sort((a, b) => a.order - b.order);
+function FilterSelect({
+  value,
+  onChange,
+  label,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] uppercase tracking-wide text-faint">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-border bg-surface2 px-2 py-1.5 text-xs text-ink focus:outline-none"
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
+
+function CardRow({
+  card,
+  selectMode,
+  selected,
+  onToggleSelect,
+  onEdit,
+  onArchive,
+  onAnswered,
+  personNames,
+}: {
+  card: Card;
+  selectMode: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onEdit: () => void;
+  onArchive: () => void;
+  onAnswered: () => void;
+  personNames: string[];
+}) {
+  return (
+    <li className="rounded-2xl border border-border bg-surface">
+      <button
+        onClick={selectMode ? onToggleSelect : onEdit}
+        className="flex w-full items-start gap-3 px-4 py-3 text-left"
+      >
+        {selectMode && (
+          <span
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-xs ${
+              selected ? 'border-accent bg-accent text-accentink' : 'border-border'
+            }`}
+          >
+            {selected ? '✓' : ''}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-medium text-ink">{card.title}</p>
+            {card.type === 'verse' && <span className="shrink-0 text-xs text-emerald-500">verse</span>}
+          </div>
+          <p className="mt-0.5 text-xs text-muted">
+            {cadenceLabel(card.cadence)} · prayed {card.prayCount}×{personNames.length ? ` · ${personNames.join(', ')}` : ''}
+          </p>
+        </div>
+      </button>
+      {!selectMode && (
+        <div className="flex border-t border-border text-xs">
+          <button onClick={onAnswered} className="flex-1 py-2 text-emerald-500 active:bg-surface2">
+            Answered ✓
+          </button>
+          <span className="w-px bg-border" />
+          <button onClick={onArchive} className="flex-1 py-2 text-muted active:bg-surface2">
+            Archive
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function BulkBar({ selected, onDone }: { selected: Set<string>; onDone: () => void }) {
+  const categories = useAppStore((s) => s.categories);
+  const bulkArchive = useAppStore((s) => s.bulkArchive);
+  const bulkMarkAnswered = useAppStore((s) => s.bulkMarkAnswered);
+  const bulkSetCategory = useAppStore((s) => s.bulkSetCategory);
+  const bulkSetCadence = useAppStore((s) => s.bulkSetCadence);
+  const bulkDelete = useAppStore((s) => s.bulkDelete);
+
+  const [picker, setPicker] = useState<null | 'category' | 'cadence'>(null);
+  const ids = [...selected];
+  const n = ids.length;
+
+  function run(fn: () => void) {
+    fn();
+    onDone();
+  }
+
+  return (
+    <>
+      <div className="safe-bottom fixed inset-x-0 bottom-16 z-40 mx-auto max-w-md border-t border-border bg-surface px-3 py-2">
+        <div className="mb-1 text-center text-xs text-muted">{n} selected</div>
+        <div className="flex justify-between gap-1 text-xs">
+          <BulkBtn label="Answered" disabled={!n} onClick={() => run(() => bulkMarkAnswered(ids))} />
+          <BulkBtn label="Archive" disabled={!n} onClick={() => run(() => bulkArchive(ids))} />
+          <BulkBtn label="Category" disabled={!n} onClick={() => setPicker('category')} />
+          <BulkBtn label="Cadence" disabled={!n} onClick={() => setPicker('cadence')} />
+          <BulkBtn
+            label="Delete"
+            danger
+            disabled={!n}
+            onClick={() => {
+              if (confirm(`Delete ${n} card${n === 1 ? '' : 's'} permanently?`)) run(() => bulkDelete(ids));
+            }}
+          />
+        </div>
+      </div>
+
+      {picker === 'category' && (
+        <ChoiceSheet title="Move to category" onClose={() => setPicker(null)}>
+          <ChoiceItem label="None (uncategorized)" onClick={() => run(() => bulkSetCategory(ids, undefined))} />
+          {categories.map((c) => (
+            <ChoiceItem key={c.id} label={c.name} color={c.color} onClick={() => run(() => bulkSetCategory(ids, c.id))} />
+          ))}
+        </ChoiceSheet>
+      )}
+
+      {picker === 'cadence' && (
+        <ChoiceSheet title="Set cadence" onClose={() => setPicker(null)}>
+          {CADENCE_PRESETS.map((p) => (
+            <ChoiceItem
+              key={cadenceKey(p.value)}
+              label={p.label}
+              onClick={() => run(() => bulkSetCadence(ids, cadenceFromKey(cadenceKey(p.value))))}
+            />
+          ))}
+        </ChoiceSheet>
+      )}
+    </>
+  );
+}
+
+function BulkBtn({ label, onClick, disabled, danger }: { label: string; onClick: () => void; disabled?: boolean; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex-1 rounded-lg py-2 disabled:opacity-40 ${danger ? 'text-red-500' : 'text-ink'} active:bg-surface2`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ChoiceSheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={onClose}>
+      <div
+        className="safe-bottom max-h-[70vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-border bg-bg p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-border" />
+        <h2 className="mb-3 text-lg font-semibold text-ink">{title}</h2>
+        <div className="space-y-1">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function ChoiceItem({ label, color, onClick }: { label: string; color?: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm text-ink active:bg-surface2">
+      {color && <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />}
+      {label}
+    </button>
+  );
 }

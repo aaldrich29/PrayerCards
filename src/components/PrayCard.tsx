@@ -7,10 +7,12 @@ import { formatDate, formatRelative } from '../lib/dates';
 
 interface Props {
   card: Card;
+  /** When provided, the back of the card shows Archive / Mark answered actions. */
+  actions?: { onArchive: () => void; onAnswer: () => void };
 }
 
 /** A single prayer card with a tap-to-flip front (request/verse) and back (notes + stats). */
-export function PrayCard({ card }: Props) {
+export function PrayCard({ card, actions }: Props) {
   const [flipped, setFlipped] = useState(false);
   // Select stable store arrays, then derive in render — returning a fresh array
   // from a Zustand selector would loop (new ref every render).
@@ -106,6 +108,24 @@ export function PrayCard({ card }: Props) {
               <dd>{formatDate(card.createdAt)}</dd>
             </div>
           </dl>
+
+          {actions && (
+            <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={actions.onArchive}
+                className="flex-1 rounded-lg border border-border py-2 text-xs font-medium opacity-80"
+              >
+                Archive
+              </button>
+              <button
+                onClick={actions.onAnswer}
+                className="flex-1 rounded-lg py-2 text-xs font-semibold text-emerald-600"
+                style={{ backgroundColor: 'rgba(16,185,129,0.14)' }}
+              >
+                Mark answered ✓
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
