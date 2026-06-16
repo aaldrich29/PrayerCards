@@ -42,6 +42,15 @@ const tabs: Tab[] = [
     ),
   },
   {
+    to: '/stats',
+    label: 'Stats',
+    icon: (
+      <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     to: '/settings',
     label: 'Settings',
     icon: (
@@ -57,7 +66,7 @@ export function BottomTabs() {
   const due = useAppStore((s) => dueCount(s.cards, Date.now(), s.settings.cadenceMode));
 
   return (
-    <nav className="safe-bottom border-t border-slate-800 bg-slate-900/95 backdrop-blur">
+    <nav className="safe-bottom border-t border-border backdrop-blur" style={{ backgroundColor: 'var(--pc-nav)' }}>
       <div className="mx-auto flex max-w-md">
         {tabs.map((tab) => (
           <NavLink
@@ -66,14 +75,14 @@ export function BottomTabs() {
             end={tab.end}
             className={({ isActive }) =>
               `relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] transition-colors ${
-                isActive ? 'text-indigo-300' : 'text-slate-400'
+                isActive ? 'text-accent' : 'text-muted'
               }`
             }
           >
             <span className="relative">
               {tab.icon}
               {tab.to === '/' && due > 0 && (
-                <span className="absolute -right-2 -top-1 min-w-4 rounded-full bg-indigo-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">
+                <span className="absolute -right-2 -top-1 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] font-semibold leading-4 text-accentink">
                   {due}
                 </span>
               )}

@@ -70,11 +70,11 @@ export function CardForm({ card, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={onClose}>
       <div
-        className="safe-bottom max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-slate-700 bg-slate-900 p-5"
+        className="safe-bottom max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-border bg-bg p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-700" />
-        <h2 className="mb-4 text-lg font-semibold text-slate-100">{card ? 'Edit card' : 'New card'}</h2>
+        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-border" />
+        <h2 className="mb-4 text-lg font-semibold text-ink">{card ? 'Edit card' : 'New card'}</h2>
 
         {/* Type */}
         <div className="mb-4 grid grid-cols-2 gap-2">
@@ -83,7 +83,7 @@ export function CardForm({ card, onClose }: Props) {
               key={t}
               onClick={() => setType(t)}
               className={`rounded-xl py-2 text-sm font-medium capitalize ${
-                type === t ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-300'
+                type === t ? 'bg-accent text-accentink' : 'bg-surface text-muted'
               }`}
             >
               {t}
@@ -137,7 +137,7 @@ export function CardForm({ card, onClose }: Props) {
                 </option>
               ))}
             </select>
-            <button onClick={quickAddCategory} className="shrink-0 rounded-xl bg-slate-800 px-3 text-sm text-indigo-300">
+            <button onClick={quickAddCategory} className="shrink-0 rounded-xl bg-surface px-3 text-sm text-accent">
               + New
             </button>
           </div>
@@ -151,13 +151,13 @@ export function CardForm({ card, onClose }: Props) {
                 key={p.id}
                 onClick={() => togglePerson(p.id)}
                 className={`rounded-full px-3 py-1 text-sm ${
-                  personIds.includes(p.id) ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-300'
+                  personIds.includes(p.id) ? 'bg-accent text-accentink' : 'bg-surface text-muted'
                 }`}
               >
                 {p.name}
               </button>
             ))}
-            <button onClick={quickAddPerson} className="rounded-full bg-slate-800 px-3 py-1 text-sm text-indigo-300">
+            <button onClick={quickAddPerson} className="rounded-full bg-surface px-3 py-1 text-sm text-accent">
               + New
             </button>
           </div>
@@ -183,18 +183,18 @@ export function CardForm({ card, onClose }: Props) {
                   onClose();
                 }
               }}
-              className="rounded-xl bg-red-500/15 px-4 py-3 text-sm font-medium text-red-300"
+              className="rounded-xl bg-red-500/15 px-4 py-3 text-sm font-medium text-red-500"
             >
               Delete
             </button>
           )}
-          <button onClick={onClose} className="flex-1 rounded-xl bg-slate-800 py-3 text-sm font-medium text-slate-200">
+          <button onClick={onClose} className="flex-1 rounded-xl bg-surface py-3 text-sm font-medium text-ink">
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="flex-1 rounded-xl bg-indigo-500 py-3 text-sm font-semibold text-white disabled:opacity-40"
+            className="flex-1 rounded-xl bg-accent py-3 text-sm font-semibold text-accentink disabled:opacity-40"
           >
             Save
           </button>
@@ -205,12 +205,12 @@ export function CardForm({ card, onClose }: Props) {
 }
 
 const inputClass =
-  'w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none';
+  'w-full rounded-xl border border-border bg-surface2 px-3 py-2.5 text-sm text-ink placeholder-faint focus:border-accent focus:outline-none';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="mb-4 block">
-      <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">{label}</span>
+      <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted">{label}</span>
       {children}
     </label>
   );

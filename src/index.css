@@ -1,5 +1,111 @@
 @import 'tailwindcss';
 
+/*
+ * Theming: each theme sets a set of raw `--pc-*` custom properties. The
+ * `@theme inline` block maps those to Tailwind color utilities (bg-bg,
+ * text-ink, border-border, bg-accent, ...) so switching `data-theme` on
+ * <html> restyles the whole app at runtime.
+ */
+@theme inline {
+  --color-bg: var(--pc-bg);
+  --color-surface: var(--pc-surface);
+  --color-surface2: var(--pc-surface-2);
+  --color-border: var(--pc-border);
+  --color-ink: var(--pc-ink);
+  --color-muted: var(--pc-muted);
+  --color-faint: var(--pc-faint);
+  --color-accent: var(--pc-accent);
+  --color-accentsoft: var(--pc-accent-soft);
+  --color-accentink: var(--pc-accent-ink);
+}
+
+/* Midnight (default) */
+:root,
+[data-theme='midnight'] {
+  color-scheme: dark;
+  --pc-bg: #0f172a;
+  --pc-surface: #1e293b;
+  --pc-surface-2: #273449;
+  --pc-border: #334155;
+  --pc-ink: #f1f5f9;
+  --pc-muted: #94a3b8;
+  --pc-faint: #64748b;
+  --pc-accent: #6366f1;
+  --pc-accent-soft: rgba(99, 102, 241, 0.16);
+  --pc-accent-ink: #ffffff;
+  --pc-card-bg: #1e293b;
+  --pc-card-ink: #f1f5f9;
+  --pc-card-rule: transparent;
+  --pc-card-margin: transparent;
+  --pc-card-font: inherit;
+  --pc-nav: rgba(15, 23, 42, 0.95);
+  --pc-theme-color: #1e1b4b;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --pc-bg: #eef2f7;
+  --pc-surface: #ffffff;
+  --pc-surface-2: #f4f7fb;
+  --pc-border: #dfe6ef;
+  --pc-ink: #0f172a;
+  --pc-muted: #51607a;
+  --pc-faint: #94a3b8;
+  --pc-accent: #4f46e5;
+  --pc-accent-soft: rgba(79, 70, 229, 0.12);
+  --pc-accent-ink: #ffffff;
+  --pc-card-bg: #ffffff;
+  --pc-card-ink: #0f172a;
+  --pc-card-rule: transparent;
+  --pc-card-margin: transparent;
+  --pc-card-font: inherit;
+  --pc-nav: rgba(255, 255, 255, 0.92);
+  --pc-theme-color: #4f46e5;
+}
+
+[data-theme='sepia'] {
+  color-scheme: light;
+  --pc-bg: #e8dcc5;
+  --pc-surface: #f7efde;
+  --pc-surface-2: #efe4cd;
+  --pc-border: #d9c9a8;
+  --pc-ink: #3a2f22;
+  --pc-muted: #7a6a52;
+  --pc-faint: #9c8c72;
+  --pc-accent: #a3672f;
+  --pc-accent-soft: rgba(163, 103, 47, 0.16);
+  --pc-accent-ink: #fff8ed;
+  --pc-card-bg: #fbf4e3;
+  --pc-card-ink: #3a2f22;
+  --pc-card-rule: transparent;
+  --pc-card-margin: transparent;
+  --pc-card-font: Georgia, 'Times New Roman', serif;
+  --pc-nav: rgba(231, 220, 197, 0.95);
+  --pc-theme-color: #a3672f;
+}
+
+/* Paper — real index-card look (kraft desk, cream card stock, ruled lines) */
+[data-theme='paper'] {
+  color-scheme: light;
+  --pc-bg: #c7b79b;
+  --pc-surface: #fbf7ee;
+  --pc-surface-2: #f3ebda;
+  --pc-border: #d8cab0;
+  --pc-ink: #2c2620;
+  --pc-muted: #6d6353;
+  --pc-faint: #978c78;
+  --pc-accent: #b1442f;
+  --pc-accent-soft: rgba(177, 68, 47, 0.14);
+  --pc-accent-ink: #fdf6ec;
+  --pc-card-bg: #fffdf6;
+  --pc-card-ink: #2a2620;
+  --pc-card-rule: #b9d2ec;
+  --pc-card-margin: #e2a59c;
+  --pc-card-font: 'Georgia', 'Iowan Old Style', 'Palatino Linotype', serif;
+  --pc-nav: rgba(199, 183, 155, 0.96);
+  --pc-theme-color: #b1442f;
+}
+
 :root {
   color-scheme: dark;
 }
@@ -14,9 +120,10 @@ body {
   margin: 0;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
-  background-color: #0f172a;
-  color: #e2e8f0;
+  background-color: var(--pc-bg);
+  color: var(--pc-ink);
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  transition: background-color 0.3s ease;
 }
 
 /* Respect iOS safe areas (notch / home indicator). */
@@ -25,4 +132,31 @@ body {
 }
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/*
+ * Prayer card surface. In the paper theme this paints ruled horizontal lines
+ * and a red margin line; other themes set those colors to transparent so the
+ * card is a clean solid surface.
+ */
+.pc-card {
+  background-color: var(--pc-card-bg);
+  color: var(--pc-card-ink);
+  font-family: var(--pc-card-font);
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 31px,
+      var(--pc-card-rule) 31px,
+      var(--pc-card-rule) 32px
+    ),
+    linear-gradient(
+      to right,
+      transparent 0,
+      transparent 40px,
+      var(--pc-card-margin) 40px,
+      var(--pc-card-margin) 41px,
+      transparent 41px
+    );
 }

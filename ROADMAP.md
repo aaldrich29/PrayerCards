@@ -19,6 +19,11 @@ Implemented:
   prayed, added).
 - **Storage**: localStorage (offline-first) + optional Google Drive sync (last-write-wins) + manual
   JSON export/import.
+- **Themes**: 4 themes via runtime CSS tokens (`data-theme` on `<html>`) — Midnight, Light, Sepia,
+  and **Index Card** (paper stock, ruled lines, red margin line, serif card font). Picker in Settings.
+- **Stats / prayer tracking**: dedicated Stats tab — total prayers, current streak, this-week count,
+  active days, a 30-day activity chart, and most-prayed-for ranking. Per-card 14-day sparkline on the
+  card back. All derived from each card's `prayLog` timestamps (`src/lib/stats.ts`, unit-tested).
 - **PWA**: installable + offline. Deploys to GitHub Pages via `.github/workflows/deploy.yml`.
 
 ## Key architecture decisions
@@ -42,9 +47,9 @@ Implemented:
 ### Prayer experience
 - **Drag-to-reorder** cards within a category (the `order` field already exists).
 - **Snooze** vs "later": optional "skip for the rest of this period" on left-swipe.
-- **Prayer streaks / history view** (we already store `prayLog` timestamps).
 - **Search & tags** across cards.
 - Up-swipe = prayed (in addition to right-swipe), down = skip.
+- Stats: monthly/yearly views, per-category breakdown, calendar heatmap.
 
 ### Content
 - **Auto-fetch verse text** from a public API when adding a verse by reference (keep manual entry as
@@ -56,7 +61,8 @@ Implemented:
   and may need a lightweight push relay — revisit only if requested).
 
 ### Polish / ops
-- Light theme + theme toggle.
+- More themes (high-contrast, OLED black, seasonal) — the token system makes new themes a small
+  addition in `src/index.css` + an entry in the Settings picker.
 - Onboarding for first-run instead of seeded sample data (or a "load sample data" button).
 - **Google OAuth verification** to lift the "unverified app" warning + 100-user cap (needed only for
   wide public distribution).

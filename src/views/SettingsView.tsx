@@ -1,12 +1,20 @@
 import { useRef } from 'react';
-import type { AppData } from '../types';
-import { SCHEMA_VERSION } from '../types';
+import type { AppData, ThemeName } from '../types';
+import { SCHEMA_VERSION, DEFAULT_THEME } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { formatDate } from '../lib/dates';
 import { SyncSection } from '../components/SyncSection';
 
+const THEMES: { name: ThemeName; label: string; bg: string; card: string; accent: string; rule?: string }[] = [
+  { name: 'midnight', label: 'Midnight', bg: '#0f172a', card: '#1e293b', accent: '#6366f1' },
+  { name: 'light', label: 'Light', bg: '#eef2f7', card: '#ffffff', accent: '#4f46e5' },
+  { name: 'sepia', label: 'Sepia', bg: '#e8dcc5', card: '#fbf4e3', accent: '#a3672f' },
+  { name: 'paper', label: 'Index Card', bg: '#c7b79b', card: '#fffdf6', accent: '#b1442f', rule: '#b9d2ec' },
+];
+
 export function SettingsView() {
   const cadenceMode = useAppStore((s) => s.settings.cadenceMode);
+  const theme = useAppStore((s) => s.settings.theme ?? DEFAULT_THEME);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const cards = useAppStore((s) => s.cards);
   const unarchiveCard = useAppStore((s) => s.unarchiveCard);
@@ -43,7 +51,7 @@ export function SettingsView() {
         cards: parsed.cards,
         categories: parsed.categories,
         people: parsed.people,
-        settings: parsed.settings ?? { cadenceMode: 'calendar' },
+        settings: parsed.settings ?? { cadenceMode: 'calendar', theme: DEFAULT_THEME },
       });
       alert('Import complete.');
     } catch {
@@ -54,14 +62,49 @@ export function SettingsView() {
   return (
     <div className="flex h-full flex-col">
       <header className="safe-top px-4 pb-2 pt-4">
-        <h1 className="text-2xl font-bold text-slate-100">Settings</h1>
+        <h1 className="text-2xl font-bold text-ink">Settings</h1>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 pb-8">
+        <Section title="Appearance">
+          <p className="mb-3 text-sm text-muted">Choose a look for your cards.</p>
+          <div className="grid grid-cols-2 gap-3">
+            {THEMES.map((t) => (
+              <button
+                key={t.name}
+                onClick={() => updateSettings({ theme: t.name })}
+                className={`rounded-xl border p-2 text-left transition-colors ${
+                  theme === t.name ? 'border-accent' : 'border-border'
+                }`}
+              >
+                <div
+                  className="relative mb-2 h-16 overflow-hidden rounded-lg"
+                  style={{ backgroundColor: t.bg }}
+                >
+                  <div
+                    className="absolute left-2 top-2 h-12 w-16 rounded-md shadow-sm"
+                    style={{
+                      backgroundColor: t.card,
+                      backgroundImage: t.rule
+                        ? `repeating-linear-gradient(to bottom, transparent 0 7px, ${t.rule} 7px 8px)`
+                        : undefined,
+                    }}
+                  />
+                  <div className="absolute right-2 top-2 h-4 w-4 rounded-full" style={{ backgroundColor: t.accent }} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-ink">{t.label}</span>
+                  {theme === t.name && <span className="text-xs text-accent">✓</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </Section>
+
         <SyncSection />
 
         <Section title="Prayer schedule">
-          <p className="mb-3 text-sm text-slate-400">When does a prayed card come back to the stack?</p>
+          <p className="mb-3 text-sm text-muted">When does a prayed card come back to the stack?</p>
           <div className="grid grid-cols-2 gap-2">
             <Option
               active={cadenceMode === 'calendar'}
@@ -79,16 +122,16 @@ export function SettingsView() {
         </Section>
 
         <Section title="Backup & restore">
-          <p className="mb-3 text-sm text-slate-400">
+          <p className="mb-3 text-sm text-muted">
             Manual JSON backup, independent of Google Drive. Keep a copy anywhere you like.
           </p>
           <div className="flex gap-3">
-            <button onClick={exportJson} className="flex-1 rounded-xl bg-slate-800 py-3 text-sm font-medium text-slate-200">
+            <button onClick={exportJson} className="flex-1 rounded-xl bg-surface2 py-3 text-sm font-medium text-ink">
               Export JSON
             </button>
             <button
               onClick={() => fileRef.current?.click()}
-              className="flex-1 rounded-xl bg-slate-800 py-3 text-sm font-medium text-slate-200"
+              className="flex-1 rounded-xl bg-surface2 py-3 text-sm font-medium text-ink"
             >
               Import JSON
             </button>
@@ -108,24 +151,24 @@ export function SettingsView() {
 
         <Section title={`Archived (${archived.length})`}>
           {archived.length === 0 ? (
-            <p className="text-sm text-slate-500">Nothing archived.</p>
+            <p className="text-sm text-faint">Nothing archived.</p>
           ) : (
             <ul className="space-y-2">
               {archived.map((c) => (
-                <li key={c.id} className="flex items-center justify-between rounded-xl bg-slate-800/50 px-3 py-2">
+                <li key={c.id} className="flex items-center justify-between rounded-xl bg-surface2 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm text-slate-200">{c.title}</p>
-                    <p className="text-xs text-slate-500">added {formatDate(c.createdAt)}</p>
+                    <p className="truncate text-sm text-ink">{c.title}</p>
+                    <p className="text-xs text-faint">added {formatDate(c.createdAt)}</p>
                   </div>
                   <div className="flex shrink-0 gap-3 text-xs">
-                    <button onClick={() => unarchiveCard(c.id)} className="text-indigo-300">
+                    <button onClick={() => unarchiveCard(c.id)} className="text-accent">
                       Restore
                     </button>
                     <button
                       onClick={() => {
                         if (confirm('Delete permanently?')) deleteCard(c.id);
                       }}
-                      className="text-red-300"
+                      className="text-red-500"
                     >
                       Delete
                     </button>
@@ -136,7 +179,7 @@ export function SettingsView() {
           )}
         </Section>
 
-        <p className="mt-8 text-center text-xs text-slate-600">
+        <p className="mt-8 text-center text-xs text-faint">
           Prayer Cards · your data stays on your device unless you sync it to your own Google Drive.
         </p>
       </div>
@@ -146,8 +189,8 @@ export function SettingsView() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">{title}</h2>
+    <section className="mb-6 rounded-2xl border border-border bg-surface p-4">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">{title}</h2>
       {children}
     </section>
   );
@@ -167,12 +210,10 @@ function Option({
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border p-3 text-left ${
-        active ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700 bg-slate-800/50'
-      }`}
+      className={`rounded-xl border p-3 text-left ${active ? 'border-accent bg-accentsoft' : 'border-border bg-surface2'}`}
     >
-      <div className="text-sm font-medium text-slate-100">{title}</div>
-      <div className="mt-1 text-xs text-slate-400">{desc}</div>
+      <div className="text-sm font-medium text-ink">{title}</div>
+      <div className="mt-1 text-xs text-muted">{desc}</div>
     </button>
   );
 }

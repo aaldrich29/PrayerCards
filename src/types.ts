@@ -41,8 +41,13 @@ export interface Person {
 
 export type CadenceMode = 'calendar' | 'rolling';
 
+export type ThemeName = 'midnight' | 'light' | 'sepia' | 'paper';
+
+export const DEFAULT_THEME: ThemeName = 'midnight';
+
 export interface Settings {
   cadenceMode: CadenceMode;
+  theme: ThemeName;
 }
 
 /** The entire dataset — persisted locally and synced to Drive as one JSON blob. */
@@ -64,6 +69,6 @@ export function emptyAppData(now: number = Date.now()): AppData {
     cards: [],
     categories: [],
     people: [],
-    settings: { cadenceMode: 'calendar' },
+    settings: { cadenceMode: 'calendar', theme: DEFAULT_THEME },
   };
 }

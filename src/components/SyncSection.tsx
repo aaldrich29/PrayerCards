@@ -14,23 +14,23 @@ export function SyncSection() {
   const { configured, linked, status, lastSyncedAt, error, link, unlink, syncNow } = useSyncStore();
 
   return (
-    <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">Google Drive sync</h2>
-      <p className="mb-3 text-sm text-slate-400">
+    <section className="mb-6 rounded-2xl border border-border bg-surface p-4">
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted">Google Drive sync</h2>
+      <p className="mb-3 text-sm text-muted">
         Optional. Back up to your <em>own</em> Google Drive so you can use multiple devices and never lose data. Your
         data is stored in a private app folder — we never see it.
       </p>
 
       {!configured ? (
-        <div className="rounded-xl bg-slate-800/60 p-3 text-xs leading-relaxed text-slate-400">
+        <div className="rounded-xl bg-surface2 p-3 text-xs leading-relaxed text-muted">
           Sync isn't configured for this build. To enable it, create a Google OAuth client ID and provide it as
-          <code className="mx-1 rounded bg-slate-700 px-1 text-slate-200">VITE_GOOGLE_CLIENT_ID</code>. Until then the
-          app works fully offline using on-device storage.
+          <code className="mx-1 rounded bg-border px-1 text-ink">VITE_GOOGLE_CLIENT_ID</code>. Until then the app works
+          fully offline using on-device storage.
         </div>
       ) : !linked ? (
         <button
           onClick={() => void link()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-medium text-slate-800"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-medium text-slate-800 shadow"
         >
           <GoogleGlyph />
           Sign in with Google
@@ -40,16 +40,16 @@ export function SyncSection() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Dot status={status} />
-              <span className="text-sm text-slate-200">{STATUS_LABEL[status]}</span>
+              <span className="text-sm text-ink">{STATUS_LABEL[status]}</span>
             </div>
-            {lastSyncedAt && <span className="text-xs text-slate-500">updated {formatRelative(lastSyncedAt)}</span>}
+            {lastSyncedAt && <span className="text-xs text-faint">updated {formatRelative(lastSyncedAt)}</span>}
           </div>
-          {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+          {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
           <div className="mt-3 flex gap-3">
-            <button onClick={() => void syncNow()} className="flex-1 rounded-xl bg-slate-800 py-2.5 text-sm text-slate-200">
+            <button onClick={() => void syncNow()} className="flex-1 rounded-xl bg-surface2 py-2.5 text-sm text-ink">
               Sync now
             </button>
-            <button onClick={unlink} className="flex-1 rounded-xl bg-slate-800 py-2.5 text-sm text-slate-400">
+            <button onClick={unlink} className="flex-1 rounded-xl bg-surface2 py-2.5 text-sm text-muted">
               Disconnect
             </button>
           </div>
@@ -67,7 +67,7 @@ function Dot({ status }: { status: SyncStatus }) {
         ? 'bg-amber-400'
         : status === 'synced'
           ? 'bg-emerald-400'
-          : 'bg-slate-500';
+          : 'bg-faint';
   return <span className={`h-2.5 w-2.5 rounded-full ${color}`} />;
 }
 

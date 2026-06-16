@@ -52,7 +52,7 @@ export function PrayView() {
   return (
     <div className="flex h-full flex-col">
       <header className="safe-top px-4 pt-4">
-        <h1 className="text-2xl font-bold text-slate-100">Pray</h1>
+        <h1 className="text-2xl font-bold text-ink">Pray</h1>
         <ScopeChips scope={scope} setScope={setScope} categories={categories} people={people} />
       </header>
 
@@ -61,13 +61,13 @@ export function PrayView() {
           <DoneState initialCount={initialCount} prayedCount={prayedCount} onRestart={() => setSessionKey((k) => k + 1)} />
         ) : (
           <>
-            <div className="mb-2 text-center text-sm text-slate-400">
+            <div className="mb-2 text-center text-sm text-muted">
               {initialCount - queue.length + 1} of {initialCount}
             </div>
             <div className="relative mx-auto h-[26rem] w-full max-w-sm">
               <SwipeDeck cards={queue} onPray={handlePray} onSkip={handleSkip} />
             </div>
-            <div className="mt-5 flex items-center justify-center gap-10 text-xs text-slate-500">
+            <div className="mt-5 flex items-center justify-center gap-10 text-xs text-faint">
               <span>← Later</span>
               <span>Prayed →</span>
             </div>
@@ -96,7 +96,7 @@ function ScopeChips({
     <button
       onClick={onClick}
       className={`shrink-0 rounded-full px-3 py-1 text-sm transition-colors ${
-        active ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-300'
+        active ? 'bg-accent text-accentink' : 'bg-surface text-muted'
       }`}
     >
       {children}
@@ -135,19 +135,17 @@ function DoneState({
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
       <div className="mb-4 text-6xl">{nothingDue ? '🕊️' : '🙏'}</div>
-      <h2 className="text-xl font-semibold text-slate-100">
-        {nothingDue ? "You're all caught up" : 'Amen.'}
-      </h2>
-      <p className="mt-2 max-w-xs text-sm text-slate-400">
+      <h2 className="text-xl font-semibold text-ink">{nothingDue ? "You're all caught up" : 'Amen.'}</h2>
+      <p className="mt-2 max-w-xs text-sm text-muted">
         {nothingDue
           ? 'Nothing is due in this stack right now. Add cards or check back later.'
           : `You prayed over ${prayedCount} ${prayedCount === 1 ? 'card' : 'cards'} this session.`}
       </p>
       <div className="mt-6 flex gap-3">
-        <button onClick={onRestart} className="rounded-full bg-slate-800 px-4 py-2 text-sm text-slate-200">
+        <button onClick={onRestart} className="rounded-full bg-surface px-4 py-2 text-sm text-ink">
           Review again
         </button>
-        <Link to="/cards" className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-medium text-white">
+        <Link to="/cards" className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accentink">
           Manage cards
         </Link>
       </div>

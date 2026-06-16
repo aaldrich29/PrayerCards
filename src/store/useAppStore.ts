@@ -66,7 +66,7 @@ export const useAppStore = create<StoreState>()(
         cards: [],
         categories: [],
         people: [],
-        settings: { cadenceMode: 'calendar' },
+        settings: { cadenceMode: 'calendar', theme: 'midnight' },
         hasSeeded: false,
 
         getData: () => {
