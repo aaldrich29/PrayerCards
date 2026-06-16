@@ -16,6 +16,7 @@ export function PrayView() {
 
   const [scope, setScope] = useState<Scope>({ kind: 'all' });
   const [queue, setQueue] = useState<Card[]>([]);
+  const [sessionIds, setSessionIds] = useState<string[]>([]); // cards in this session, for "Review again"
   const [initialCount, setInitialCount] = useState(0);
   const [prayedCount, setPrayedCount] = useState(0);
   const [sessionKey, setSessionKey] = useState(0);
@@ -32,6 +33,7 @@ export function PrayView() {
   useEffect(() => {
     const stack = buildStack({ cards, now: Date.now(), mode, filter });
     setQueue(stack);
+    setSessionIds(stack.map((c) => c.id));
     setInitialCount(stack.length);
     setPrayedCount(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -47,7 +49,19 @@ export function PrayView() {
     setQueue((q) => q.filter((c) => c.id !== card.id));
   }
 
+  // Replay the exact cards from this session, regardless of whether they're
+  // still "due" — after praying, cards leave the stack, so rebuilding from the
+  // due logic would find nothing. Pull fresh card data by id so stats are current.
+  function reviewAgain() {
+    const byId = new Map(cards.map((c) => [c.id, c]));
+    const replay = sessionIds.map((id) => byId.get(id)).filter((c): c is Card => c != null);
+    setQueue(replay);
+    setInitialCount(replay.length);
+    setPrayedCount(0);
+  }
+
   const done = queue.length === 0;
+  const canReview = sessionIds.length > 0;
 
   return (
     <div className="flex h-full flex-col">
@@ -58,7 +72,12 @@ export function PrayView() {
 
       <div className="relative flex-1 px-5 pb-5 pt-2">
         {done ? (
-          <DoneState initialCount={initialCount} prayedCount={prayedCount} onRestart={() => setSessionKey((k) => k + 1)} />
+          <DoneState
+            prayedCount={prayedCount}
+            canReview={canReview}
+            onReview={reviewAgain}
+            onRefresh={() => setSessionKey((k) => k + 1)}
+          />
         ) : (
           <>
             <div className="mb-2 text-center text-sm text-muted">
@@ -123,15 +142,17 @@ function ScopeChips({
 }
 
 function DoneState({
-  initialCount,
   prayedCount,
-  onRestart,
+  canReview,
+  onReview,
+  onRefresh,
 }: {
-  initialCount: number;
   prayedCount: number;
-  onRestart: () => void;
+  canReview: boolean;
+  onReview: () => void;
+  onRefresh: () => void;
 }) {
-  const nothingDue = initialCount === 0;
+  const nothingDue = !canReview;
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
       <div className="mb-4 text-6xl">{nothingDue ? '🕊️' : '🙏'}</div>
@@ -139,12 +160,20 @@ function DoneState({
       <p className="mt-2 max-w-xs text-sm text-muted">
         {nothingDue
           ? 'Nothing is due in this stack right now. Add cards or check back later.'
-          : `You prayed over ${prayedCount} ${prayedCount === 1 ? 'card' : 'cards'} this session.`}
+          : prayedCount > 0
+            ? `You prayed over ${prayedCount} ${prayedCount === 1 ? 'card' : 'cards'} this session.`
+            : 'Session complete.'}
       </p>
       <div className="mt-6 flex gap-3">
-        <button onClick={onRestart} className="rounded-full bg-surface px-4 py-2 text-sm text-ink">
-          Review again
-        </button>
+        {canReview ? (
+          <button onClick={onReview} className="rounded-full bg-surface px-4 py-2 text-sm text-ink">
+            Review again
+          </button>
+        ) : (
+          <button onClick={onRefresh} className="rounded-full bg-surface px-4 py-2 text-sm text-ink">
+            Refresh
+          </button>
+        )}
         <Link to="/cards" className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accentink">
           Manage cards
         </Link>
