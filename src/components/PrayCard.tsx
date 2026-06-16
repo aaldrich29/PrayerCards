@@ -50,7 +50,7 @@ export function PrayCard({ card, actions }: Props) {
             <span className="text-xs opacity-60">{cadenceLabel(card.cadence)}</span>
           </div>
 
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto py-2 text-center">
             {card.type === 'verse' && card.verseRef && (
               <div className="mb-3 text-sm font-semibold uppercase tracking-wide" style={{ color: accent }}>
                 {card.verseRef}
@@ -59,6 +59,9 @@ export function PrayCard({ card, actions }: Props) {
             <p className="text-xl font-semibold leading-snug">{card.title}</p>
             {card.type === 'verse' && card.body && (
               <p className="mt-4 text-base italic leading-relaxed opacity-80">“{card.body}”</p>
+            )}
+            {card.type !== 'verse' && card.body && (
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed opacity-80">{card.body}</p>
             )}
           </div>
 

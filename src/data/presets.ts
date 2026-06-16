@@ -88,6 +88,82 @@ const namesOfGod: PresetCard[] = [
   { type: 'verse', title: 'Arise, Shine', verseRef: 'Isaiah 60:4-5, 10a', body: '4 "Lift up your eyes round about and see; They all gather together, they come to you. Your sons will come from afar, And your daughters will be carried in the arms. 5 Then you will see and be radiant, And your heart will thrill and rejoice; Because the abundance of the sea will be turned to you, The wealth of the nations will come to you. ... 10a Foreigners will build up your walls."' },
 ];
 
+// Praying for your spouse (Scripture: ESV).
+const spouse: PresetCard[] = [
+  { type: 'request', title: 'Their walk with God', body: 'Pray your spouse would love Jesus more each day — growing in His Word, in prayer, and in glad obedience.' },
+  { type: 'verse', title: 'Love sacrificially', verseRef: 'Ephesians 5:25', body: 'Husbands, love your wives, as Christ loved the church and gave himself up for her,' },
+  { type: 'verse', title: 'Two become one', verseRef: 'Genesis 2:24', body: 'Therefore a man shall leave his father and his mother and hold fast to his wife, and they shall become one flesh.' },
+  { type: 'verse', title: 'Love and respect', verseRef: 'Ephesians 5:33', body: 'However, let each one of you love his wife as himself, and let the wife see that she respects her husband.' },
+  { type: 'verse', title: 'Patient, kind love', verseRef: '1 Corinthians 13:4-7', body: 'Love is patient and kind; love does not envy or boast; it is not arrogant or rude. It does not insist on its own way; it is not irritable or resentful; it does not rejoice at wrongdoing, but rejoices with the truth. Love bears all things, believes all things, hopes all things, endures all things.' },
+  { type: 'verse', title: 'Gracious words', verseRef: 'Ephesians 4:29', body: 'Let no corrupting talk come out of your mouths, but only such as is good for building up, as fits the occasion, that it may give grace to those who hear.' },
+  { type: 'verse', title: 'Quick to forgive', verseRef: 'Colossians 3:13', body: 'bearing with one another and, if one has a complaint against another, forgiving each other; as the Lord has forgiven you, so you also must forgive.' },
+  { type: 'request', title: 'Faithfulness and purity', body: 'Pray for faithfulness and purity in your marriage, and a hedge of protection around both of you against temptation.' },
+  { type: 'request', title: 'Health and protection', body: 'Lift up your spouse’s physical, emotional, and mental health. Ask God to strengthen, protect, and sustain them.' },
+  { type: 'request', title: 'Their work and calling', body: 'Pray for your spouse’s work and responsibilities, and for a clear sense of God’s calling and purpose.' },
+  { type: 'request', title: 'Thank God for them', body: 'Thank God for your spouse — name specific things you are grateful for about them today.' },
+];
+
+// Praying for your children (Scripture: ESV).
+const children: PresetCard[] = [
+  { type: 'request', title: 'That they would know Jesus', body: 'Pray each child would come to genuine faith in Christ early, and walk with Him all their days.' },
+  { type: 'verse', title: 'Wise for salvation', verseRef: '2 Timothy 3:15', body: 'and how from childhood you have been acquainted with the sacred writings, which are able to make you wise for salvation through faith in Christ Jesus.' },
+  { type: 'verse', title: 'Grow like Jesus', verseRef: 'Luke 2:52', body: 'And Jesus increased in wisdom and in stature and in favor with God and man.' },
+  { type: 'verse', title: 'Train them up', verseRef: 'Proverbs 22:6', body: 'Train up a child in the way he should go; even when he is old he will not depart from it.' },
+  { type: 'verse', title: 'Wisdom from God', verseRef: 'James 1:5', body: 'If any of you lacks wisdom, let him ask God, who gives generously to all without reproach, and it will be given him.' },
+  { type: 'verse', title: 'A heart for God’s Word', verseRef: 'Deuteronomy 6:6-7', body: 'And these words that I command you today shall be on your heart. You shall teach them diligently to your children, and shall talk of them when you sit in your house, and when you walk by the way, and when you lie down, and when you rise.' },
+  { type: 'request', title: 'Godly character', body: 'Pray for honesty, kindness, humility, courage, diligence, and self-control to take root in each child.' },
+  { type: 'verse', title: 'Wise friendships', verseRef: '1 Corinthians 15:33', body: 'Do not be deceived: "Bad company ruins good morals."' },
+  { type: 'request', title: 'Protection', body: 'Ask God to protect your children in body, mind, and soul, and to keep them from the evil one (John 17:15).' },
+  { type: 'request', title: 'Their future spouse', body: 'Pray for the person each child may one day marry — for their faith, character, and protection even now.' },
+  { type: 'request', title: 'Their calling', body: 'Pray they would discover and walk in the good works and purpose God has prepared for them (Ephesians 2:10).' },
+  { type: 'request', title: 'Thank God for each child', body: 'Thank God for each of your children by name, and for the specific gift each one is.' },
+];
+
+// Praying for yourself (Scripture: ESV).
+const self: PresetCard[] = [
+  { type: 'request', title: 'Hunger for God', body: 'Ask God for a deeper love for Jesus and a consistent, joyful time with Him in His Word and prayer.' },
+  { type: 'verse', title: 'Ask for wisdom', verseRef: 'James 1:5', body: 'If any of you lacks wisdom, let him ask God, who gives generously to all without reproach, and it will be given him.' },
+  { type: 'verse', title: 'A clean heart', verseRef: 'Psalm 51:10', body: 'Create in me a clean heart, O God, and renew a right spirit within me.' },
+  { type: 'verse', title: 'Search me, O God', verseRef: 'Psalm 139:23-24', body: 'Search me, O God, and know my heart! Try me and know my thoughts! And see if there be any grievous way in me, and lead me in the way everlasting!' },
+  { type: 'verse', title: 'Guard my mouth', verseRef: 'Psalm 141:3', body: 'Set a guard, O LORD, over my mouth; keep watch over the door of my lips!' },
+  { type: 'verse', title: 'Fruit of the Spirit', verseRef: 'Galatians 5:22-23', body: 'But the fruit of the Spirit is love, joy, peace, patience, kindness, goodness, faithfulness, gentleness, self-control; against such things there is no law.' },
+  { type: 'verse', title: 'Work for the Lord', verseRef: 'Colossians 3:23', body: 'Whatever you do, work heartily, as for the Lord and not for men,' },
+  { type: 'verse', title: 'Renewed strength', verseRef: 'Isaiah 40:31', body: 'but they who wait for the LORD shall renew their strength; they shall mount up with wings like eagles; they shall run and not be weary; they shall walk and not faint.' },
+  { type: 'verse', title: 'Contentment', verseRef: 'Hebrews 13:5', body: 'Keep your life free from love of money, and be content with what you have, for he has said, "I will never leave you nor forsake you."' },
+  { type: 'request', title: 'Humility', body: 'Pray for a humble heart — to put others first, listen well, and depend on God’s grace (1 Peter 5:6).' },
+  { type: 'request', title: 'Calling and purpose', body: 'Ask God for clarity, courage, and faithfulness in the work and purpose He has given you.' },
+  { type: 'verse', title: 'Cast your cares', verseRef: '1 Peter 5:7', body: 'casting all your anxieties on him, because he cares for you.' },
+];
+
+// TACOS — a guided prayer rhythm: Thanksgiving, Adoration, Confession, Others, Self.
+const tacos: PresetCard[] = [
+  {
+    type: 'request',
+    title: 'T — Thanksgiving',
+    body: 'Begin with thanks. Slow down and name specific blessings: salvation, the people you love, provision, answered prayers, God’s steady faithfulness. Thank Him for at least three things right now.\n\n“give thanks in all circumstances; for this is the will of God in Christ Jesus for you.” — 1 Thessalonians 5:18',
+  },
+  {
+    type: 'request',
+    title: 'A — Adoration',
+    body: 'Adore God for who He is, not just what He does. Praise His character — holy, loving, sovereign, merciful, faithful, wise. Worship Him by His names (try the Names of God set). Tell Him what you love about Him.\n\n“Great is the LORD, and greatly to be praised, and his greatness is unsearchable.” — Psalm 145:3',
+  },
+  {
+    type: 'request',
+    title: 'C — Confession',
+    body: 'Confess honestly. Ask the Spirit to search you; name specific sins rather than generalities. Receive His forgiveness, and turn from them with His help.\n\n“If we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.” — 1 John 1:9',
+  },
+  {
+    type: 'request',
+    title: 'O — Others',
+    body: 'Intercede for others. Lift up family, friends, your church and leaders, the hurting, and those who don’t yet know Christ. Pray for their needs and, above all, their salvation.\n\n“Let each of you look not only to his own interests, but also to the interests of others.” — Philippians 2:4',
+  },
+  {
+    type: 'request',
+    title: 'S — Self',
+    body: 'Bring your own needs to God last. Ask for wisdom, strength, provision, and guidance for today. Cast your worries on Him and trust His care.\n\n“casting all your anxieties on him, because he cares for you.” — 1 Peter 5:7',
+  },
+];
+
 export const PRESET_STACKS: PresetStack[] = [
   {
     id: 'steve-gaines-names-of-god',
@@ -97,5 +173,38 @@ export const PRESET_STACKS: PresetStack[] = [
     suggestedCategory: 'Names of God',
     suggestedCadence: { kind: 'daily' },
     cards: namesOfGod,
+  },
+  {
+    id: 'tacos-guided-prayer',
+    name: 'TACOS — Guided Prayer',
+    description:
+      'A guided daily rhythm: Thanksgiving, Adoration, Confession, Others, Self. Five cards that walk you through how to pray each part.',
+    suggestedCategory: 'TACOS Prayer',
+    suggestedCadence: { kind: 'daily' },
+    cards: tacos,
+  },
+  {
+    id: 'praying-for-spouse',
+    name: 'Praying for Your Spouse',
+    description: 'Pray Scripture and blessings over your husband or wife — their walk with God, your marriage, and their well-being.',
+    suggestedCategory: 'My Spouse',
+    suggestedCadence: { kind: 'daily' },
+    cards: spouse,
+  },
+  {
+    id: 'praying-for-children',
+    name: 'Praying for Your Children',
+    description: 'Pray for your children’s faith, wisdom, character, protection, and future — grounded in Scripture.',
+    suggestedCategory: 'My Children',
+    suggestedCadence: { kind: 'daily' },
+    cards: children,
+  },
+  {
+    id: 'praying-for-self',
+    name: 'Praying for Yourself',
+    description: 'Bring your own heart before God — for hunger after Him, wisdom, purity, strength, and calling.',
+    suggestedCategory: 'Myself',
+    suggestedCadence: { kind: 'daily' },
+    cards: self,
   },
 ];
