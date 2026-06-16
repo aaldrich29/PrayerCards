@@ -1,9 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { AppData, ThemeName } from '../types';
 import { SCHEMA_VERSION, DEFAULT_THEME } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { formatDate } from '../lib/dates';
 import { SyncSection } from '../components/SyncSection';
+import { PRESET_STACKS, type PresetStack } from '../data/presets';
+import { PresetDeployDialog } from '../components/PresetDeployDialog';
 
 const THEMES: { name: ThemeName; label: string; bg: string; card: string; accent: string; rule?: string }[] = [
   { name: 'midnight', label: 'Midnight', bg: '#0f172a', card: '#1e293b', accent: '#6366f1' },
@@ -22,6 +24,7 @@ export function SettingsView() {
   const getData = useAppStore((s) => s.getData);
   const replaceData = useAppStore((s) => s.replaceData);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [deploying, setDeploying] = useState<PresetStack | null>(null);
 
   const archived = cards.filter((c) => c.status === 'archived');
 
@@ -99,6 +102,28 @@ export function SettingsView() {
               </button>
             ))}
           </div>
+        </Section>
+
+        <Section title="Prayer card sets">
+          <p className="mb-3 text-sm text-muted">Add a ready-made set of cards. You choose the category and how often they come up.</p>
+          <ul className="space-y-2">
+            {PRESET_STACKS.map((p) => (
+              <li key={p.id}>
+                <button
+                  onClick={() => setDeploying(p)}
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-surface2 px-3 py-3 text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-ink">{p.name}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted">{p.description}</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accentink">
+                    Add {p.cards.length}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </Section>
 
         <SyncSection />
@@ -183,6 +208,8 @@ export function SettingsView() {
           Prayer Cards · your data stays on your device unless you sync it to your own Google Drive.
         </p>
       </div>
+
+      {deploying && <PresetDeployDialog preset={deploying} onClose={() => setDeploying(null)} />}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import type { Card, Cadence } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { cadenceLabel, CADENCE_PRESETS, cadenceKey, cadenceFromKey } from '../lib/cadence';
 import { CardForm } from '../components/CardForm';
-import { NoteDialog } from '../components/NoteDialog';
+import { CardDeck } from '../components/CardDeck';
 
 type Sort = 'manual' | 'recent' | 'mostPrayed' | 'added' | 'alpha';
 type CadenceFilter = 'all' | Cadence['kind'];
@@ -23,13 +23,10 @@ export function CardsView() {
   const cards = useAppStore((s) => s.cards);
   const categories = useAppStore((s) => s.categories);
   const people = useAppStore((s) => s.people);
-  const archiveCard = useAppStore((s) => s.archiveCard);
-  const markAnswered = useAppStore((s) => s.markAnswered);
   const reorderCards = useAppStore((s) => s.reorderCards);
 
-  const [editing, setEditing] = useState<Card | null>(null);
   const [creating, setCreating] = useState(false);
-  const [answering, setAnswering] = useState<Card | null>(null);
+  const [deck, setDeck] = useState<{ title: string; ids: string[]; index: number } | null>(null);
 
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -101,6 +98,14 @@ export function CardsView() {
     setSelected((s) => {
       const next = new Set(s);
       next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function setGroupSelected(ids: string[], on: boolean) {
+    setSelected((s) => {
+      const next = new Set(s);
+      ids.forEach((id) => (on ? next.add(id) : next.delete(id)));
       return next;
     });
   }
@@ -238,15 +243,29 @@ export function CardsView() {
             const isCollapsed = collapsed.has(g.id);
             return (
               <section key={g.id} className="mb-5">
-                <button
-                  onClick={() => toggleCollapse(g.id)}
-                  className="mb-2 flex w-full items-center gap-2 text-left"
-                >
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: g.color }} />
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{g.name}</h2>
-                  <span className="text-xs text-faint">{g.cards.length}</span>
-                  <span className="ml-auto text-faint">{isCollapsed ? '▸' : '▾'}</span>
-                </button>
+                <div className="mb-2 flex items-center gap-2">
+                  {selectMode &&
+                    (() => {
+                      const allSel = g.cards.every((c) => selected.has(c.id));
+                      return (
+                        <button
+                          onClick={() => setGroupSelected(g.cards.map((c) => c.id), !allSel)}
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-xs ${
+                            allSel ? 'border-accent bg-accent text-accentink' : 'border-border'
+                          }`}
+                          aria-label={allSel ? 'Deselect all in category' : 'Select all in category'}
+                        >
+                          {allSel ? '✓' : ''}
+                        </button>
+                      );
+                    })()}
+                  <button onClick={() => toggleCollapse(g.id)} className="flex flex-1 items-center gap-2 text-left">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: g.color }} />
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{g.name}</h2>
+                    <span className="text-xs text-faint">{g.cards.length}</span>
+                    <span className="ml-auto text-faint">{isCollapsed ? '▸' : '▾'}</span>
+                  </button>
+                </div>
 
                 {!isCollapsed &&
                   (reorderable ? (
@@ -270,16 +289,14 @@ export function CardsView() {
                     </Reorder.Group>
                   ) : (
                     <ul className="space-y-2">
-                      {g.cards.map((c) => (
+                      {g.cards.map((c, idx) => (
                         <CardRow
                           key={c.id}
                           card={c}
                           selectMode={selectMode}
                           selected={selected.has(c.id)}
                           onToggleSelect={() => toggleSelect(c.id)}
-                          onEdit={() => setEditing(c)}
-                          onArchive={() => archiveCard(c.id)}
-                          onAnswered={() => setAnswering(c)}
+                          onOpen={() => setDeck({ title: g.name, ids: g.cards.map((x) => x.id), index: idx })}
                           personNames={c.personIds.map((id) => peopleById.get(id)?.name).filter(Boolean) as string[]}
                         />
                       ))}
@@ -306,17 +323,7 @@ export function CardsView() {
       )}
 
       {creating && <CardForm onClose={() => setCreating(false)} />}
-      {editing && <CardForm card={editing} onClose={() => setEditing(null)} />}
-      {answering && (
-        <NoteDialog
-          title="Mark as answered"
-          label="Add a note about how this prayer was answered (optional)."
-          placeholder="e.g. Got the job — thank you, Lord!"
-          saveLabel="Mark answered"
-          onSave={(note) => markAnswered(answering.id, note)}
-          onClose={() => setAnswering(null)}
-        />
-      )}
+      {deck && <CardDeck title={deck.title} cardIds={deck.ids} startIndex={deck.index} onClose={() => setDeck(null)} />}
     </div>
   );
 }
@@ -351,29 +358,25 @@ function CardRow({
   selectMode,
   selected,
   onToggleSelect,
-  onEdit,
-  onArchive,
-  onAnswered,
+  onOpen,
   personNames,
 }: {
   card: Card;
   selectMode: boolean;
   selected: boolean;
   onToggleSelect: () => void;
-  onEdit: () => void;
-  onArchive: () => void;
-  onAnswered: () => void;
+  onOpen: () => void;
   personNames: string[];
 }) {
   return (
     <li className="rounded-2xl border border-border bg-surface">
       <button
-        onClick={selectMode ? onToggleSelect : onEdit}
-        className="flex w-full items-start gap-3 px-4 py-3 text-left"
+        onClick={selectMode ? onToggleSelect : onOpen}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left"
       >
         {selectMode && (
           <span
-            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-xs ${
+            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-xs ${
               selected ? 'border-accent bg-accent text-accentink' : 'border-border'
             }`}
           >
@@ -389,18 +392,8 @@ function CardRow({
             {cadenceLabel(card.cadence)} · prayed {card.prayCount}×{personNames.length ? ` · ${personNames.join(', ')}` : ''}
           </p>
         </div>
+        {!selectMode && <span className="shrink-0 text-faint">›</span>}
       </button>
-      {!selectMode && (
-        <div className="flex border-t border-border text-xs">
-          <button onClick={onAnswered} className="flex-1 py-2 text-emerald-500 active:bg-surface2">
-            Answered ✓
-          </button>
-          <span className="w-px bg-border" />
-          <button onClick={onArchive} className="flex-1 py-2 text-muted active:bg-surface2">
-            Archive
-          </button>
-        </div>
-      )}
     </li>
   );
 }

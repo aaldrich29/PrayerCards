@@ -33,6 +33,12 @@ Implemented:
   and your note. Notes are editable later.
 - **In-deck actions**: the back of a prayer card has Archive and Mark answered; a quick-add button in
   Pray lets you jot a new request without leaving the deck.
+- **Preset card sets**: Settings → Prayer card sets lets you deploy a ready-made stack, choosing the
+  category and cadence in bulk. First set: "Steve Gaines — Names of God" (46 cards). Defined in
+  `src/data/presets.ts` — adding more sets is just another entry.
+- **Manage Cards as a prayer surface**: tapping a card opens a prayable deck for that whole category
+  (starting at the tapped card) with pray/later, an Edit button, and Archive/Mark-answered on the
+  card back. Bulk select can select an entire category from its header.
 - **PWA**: installable + offline. Deploys to GitHub Pages via `.github/workflows/deploy.yml`.
 
 ## Key architecture decisions
@@ -44,6 +50,22 @@ Implemented:
 - **Single-document data model** (`AppData` in `src/types.ts`) so sync is one JSON blob.
 - **Dev lives on local disk**, not `G:\My Drive` — npm can't reliably write `node_modules` to the
   Google Drive virtual filesystem.
+
+### Planned preset sets & categories (brainstorm)
+
+Suggested category structure: **Family** (spouse, each child by name, parents, extended), **Church**
+(leadership, members, missions/missionaries, ministries), **Work/Vocation**, **Self** (spiritual
+growth, character, health, calling), **Friends**, **The Lost** (unsaved loved ones), **Nation &
+Leaders**, **Gratitude/Praise**, **Daily Rhythm** (ACTS / Lord's Prayer).
+
+Candidate preset stacks to author next (each deployable with chosen category + cadence):
+- Praying Scripture for your **spouse** (husband / wife variants)
+- Praying for your **children** (with son / daughter variants), incl. character, faith, future spouse
+- Praying for your **church & pastor**
+- Praying for **yourself** — ACTS (Adoration, Confession, Thanksgiving, Supplication)
+- The **Lord's Prayer** as a daily template
+- Praying for the **lost** by name
+- Praying for **the nation & those in authority**
 
 ## Planned next (rough priority order)
 

@@ -24,6 +24,8 @@ interface StoreState extends AppData {
 
   // Cards
   addCard: (input: NewCardInput) => Card;
+  /** Bulk-create cards (e.g. deploying a preset stack). */
+  addCards: (inputs: NewCardInput[]) => void;
   updateCard: (id: string, patch: Partial<Card>) => void;
   deleteCard: (id: string) => void;
   prayForCard: (id: string, now?: number) => void;
@@ -119,6 +121,28 @@ export const useAppStore = create<StoreState>()(
           mutate((d) => ({ cards: [...d.cards, card] }));
           return card;
         },
+
+        addCards: (inputs) =>
+          mutate((d) => {
+            let order = nextOrder(d.cards);
+            const now = Date.now();
+            const created: Card[] = inputs.map((input) => ({
+              id: newId(),
+              type: input.type,
+              title: input.title.trim(),
+              body: input.body?.trim() || undefined,
+              verseRef: input.verseRef?.trim() || undefined,
+              categoryId: input.categoryId,
+              personIds: input.personIds ?? [],
+              cadence: input.cadence,
+              status: 'active',
+              createdAt: now,
+              prayCount: 0,
+              prayLog: [],
+              order: order++,
+            }));
+            return { cards: [...d.cards, ...created] };
+          }),
 
         updateCard: (id, patch) =>
           mutate((d) => ({
