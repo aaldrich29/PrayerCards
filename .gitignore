@@ -1,0 +1,30 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build output
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+
+# env (never commit your real client id config files)
+.env
+.env.local
+.env.*.local
+
+# editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+
+# Claude Code: commit shared project config, ignore machine-local overrides
+.claude/settings.local.json
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
