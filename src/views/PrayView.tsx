@@ -11,8 +11,14 @@ type Scope = { kind: 'all' } | { kind: 'category'; id: string } | { kind: 'perso
 
 export function PrayView() {
   const cards = useAppStore((s) => s.cards);
-  const categories = useAppStore((s) => s.categories);
-  const people = useAppStore((s) => s.people);
+  const allCategories = useAppStore((s) => s.categories);
+  const allPeople = useAppStore((s) => s.people);
+
+  const activeCards = cards.filter((c) => c.status === 'active');
+  const activeCategoryIds = new Set(activeCards.map((c) => c.categoryId).filter(Boolean));
+  const activePersonIds = new Set(activeCards.flatMap((c) => c.personIds));
+  const categories = allCategories.filter((c) => activeCategoryIds.has(c.id));
+  const people = allPeople.filter((p) => activePersonIds.has(p.id));
   const mode = useAppStore((s) => s.settings.cadenceMode);
   const prayForCard = useAppStore((s) => s.prayForCard);
   const archiveCard = useAppStore((s) => s.archiveCard);
