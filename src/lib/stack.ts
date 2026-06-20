@@ -69,6 +69,29 @@ export function buildStack({ cards, now, mode = 'calendar', filter }: BuildStack
     });
 }
 
+/**
+ * Weighted shuffle: biases toward cards not prayed in a long time (or ever),
+ * while still mixing all cards together.
+ *
+ * Each card gets score = recency*0.7 + random*0.3, sorted descending.
+ * recency = min(daysSinceLastPrayed / 90, 1) — so 90+ days (or never) = 1.0,
+ * and recently-prayed cards get proportionally less. The 30% random component
+ * ensures cards from the same category/recency tier are spread throughout the
+ * deck rather than clustered.
+ */
+export function weightedShuffle(cards: Card[], now: number): Card[] {
+  const DAY = 86_400_000;
+  return [...cards]
+    .map((card) => {
+      const daysSince = card.lastPrayedAt != null ? (now - card.lastPrayedAt) / DAY : 9999;
+      const recency = Math.min(daysSince / 90, 1);
+      const score = recency * 0.7 + Math.random() * 0.3;
+      return { card, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(({ card }) => card);
+}
+
 /** Return a new card object marked as prayed-for at `now` (immutably). */
 export function markPrayed(card: Card, now: number): Card {
   return {

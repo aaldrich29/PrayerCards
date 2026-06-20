@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Card } from '../types';
 import { useAppStore } from '../store/useAppStore';
-import { buildStack } from '../lib/stack';
+import { buildStack, weightedShuffle } from '../lib/stack';
 import { SwipeDeck } from '../components/SwipeDeck';
 import { CardForm } from '../components/CardForm';
 import { NoteDialog } from '../components/NoteDialog';
@@ -20,6 +20,8 @@ export function PrayView() {
   const categories = allCategories.filter((c) => activeCategoryIds.has(c.id));
   const people = allPeople.filter((p) => activePersonIds.has(p.id));
   const mode = useAppStore((s) => s.settings.cadenceMode);
+  const shuffle = useAppStore((s) => s.settings.shuffleStack ?? true);
+  const updateSettings = useAppStore((s) => s.updateSettings);
   const prayForCard = useAppStore((s) => s.prayForCard);
   const archiveCard = useAppStore((s) => s.archiveCard);
   const markAnswered = useAppStore((s) => s.markAnswered);
@@ -43,13 +45,14 @@ export function PrayView() {
   // cards changes (add/delete/first-run seed). Praying only updates a card's
   // lastPrayedAt — not the count — so the deck stays stable mid-session.
   useEffect(() => {
-    const stack = buildStack({ cards, now: Date.now(), mode, filter });
+    const raw = buildStack({ cards, now: Date.now(), mode, filter });
+    const stack = shuffle ? weightedShuffle(raw, Date.now()) : raw;
     setQueue(stack);
     setSessionIds(stack.map((c) => c.id));
     setInitialCount(stack.length);
     setPrayedCount(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, mode, sessionKey, cards.length]);
+  }, [filter, mode, shuffle, sessionKey, cards.length]);
 
   function handlePray(card: Card) {
     prayForCard(card.id);
@@ -97,7 +100,18 @@ export function PrayView() {
   return (
     <div className="flex h-full flex-col">
       <header className="safe-top px-4 pt-4">
-        <h1 className="text-2xl font-bold text-ink">Pray</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-ink">Pray</h1>
+          <button
+            onClick={() => updateSettings({ shuffleStack: !shuffle })}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              shuffle ? 'bg-accent text-accentink' : 'bg-surface text-muted'
+            }`}
+            title={shuffle ? 'Weighted shuffle on' : 'Ordered by oldest first'}
+          >
+            ⇄ Shuffle
+          </button>
+        </div>
         <ScopeChips scope={scope} setScope={setScope} categories={categories} people={people} />
       </header>
 

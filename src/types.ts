@@ -48,6 +48,7 @@ export const DEFAULT_THEME: ThemeName = 'midnight';
 export interface Settings {
   cadenceMode: CadenceMode;
   theme: ThemeName;
+  shuffleStack: boolean;
 }
 
 /** The entire dataset — persisted locally and synced to Drive as one JSON blob. */
@@ -69,6 +70,6 @@ export function emptyAppData(now: number = Date.now()): AppData {
     cards: [],
     categories: [],
     people: [],
-    settings: { cadenceMode: 'calendar', theme: DEFAULT_THEME },
+    settings: { cadenceMode: 'calendar', theme: DEFAULT_THEME, shuffleStack: true },
   };
 }
