@@ -41,10 +41,9 @@ function DraggableCard({
   return (
     <motion.div
       className="absolute inset-0"
-      style={{ x, rotate }}
+      style={{ x, rotate, touchAction: 'none' }}
       drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.6}
+      dragSnapToOrigin
       onDragEnd={(_, info) => {
         if (info.offset.x > SWIPE_THRESHOLD || info.velocity.x > VELOCITY_THRESHOLD) onPray();
         else if (info.offset.x < -SWIPE_THRESHOLD || info.velocity.x < -VELOCITY_THRESHOLD) onSkip();
