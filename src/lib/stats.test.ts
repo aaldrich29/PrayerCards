@@ -13,6 +13,7 @@ function makeCard(id: string, prayLog: number[]): Card {
     cadence: { kind: 'daily' },
     status: 'active',
     createdAt: 0,
+    updatedAt: 0,
     prayCount: prayLog.length,
     prayLog,
     order: 0,

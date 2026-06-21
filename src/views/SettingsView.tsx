@@ -54,6 +54,9 @@ export function SettingsView() {
         cards: parsed.cards,
         categories: parsed.categories,
         people: parsed.people,
+        deletedCardIds: parsed.deletedCardIds ?? {},
+        deletedCategoryIds: parsed.deletedCategoryIds ?? {},
+        deletedPersonIds: parsed.deletedPersonIds ?? {},
         settings: parsed.settings ?? { cadenceMode: 'calendar', theme: DEFAULT_THEME, shuffleStack: true },
       });
       alert('Import complete.');

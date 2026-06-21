@@ -11,13 +11,13 @@ import { DEFAULT_THEME } from './types';
 import { initSync } from './lib/sync';
 
 export default function App() {
-  const seedSampleData = useAppStore((s) => s.seedSampleData);
+  const seedWelcomeCard = useAppStore((s) => s.seedWelcomeCard);
   const theme = useAppStore((s) => s.settings.theme ?? DEFAULT_THEME);
 
-  // Friendly first-run sample data so the app isn't empty on first open.
+  // First-run: a single instructional card instead of fake sample data.
   useEffect(() => {
-    seedSampleData();
-  }, [seedSampleData]);
+    seedWelcomeCard();
+  }, [seedWelcomeCard]);
 
   // Apply the selected theme to <html> and keep the PWA theme-color in sync.
   useEffect(() => {

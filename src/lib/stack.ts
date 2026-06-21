@@ -99,6 +99,7 @@ export function markPrayed(card: Card, now: number): Card {
     lastPrayedAt: now,
     prayCount: card.prayCount + 1,
     prayLog: [...card.prayLog, now],
+    updatedAt: now,
   };
 }
 

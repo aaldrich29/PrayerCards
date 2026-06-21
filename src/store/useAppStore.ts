@@ -56,7 +56,7 @@ interface StoreState extends AppData {
   // Settings
   updateSettings: (patch: Partial<Settings>) => void;
 
-  seedSampleData: () => void;
+  seedWelcomeCard: () => void;
 }
 
 function nextOrder(cards: Card[]): number {
@@ -77,6 +77,9 @@ export const useAppStore = create<StoreState>()(
         cards: [],
         categories: [],
         people: [],
+        deletedCardIds: {},
+        deletedCategoryIds: {},
+        deletedPersonIds: {},
         settings: { cadenceMode: 'calendar', theme: 'midnight', shuffleStack: true },
         hasSeeded: false,
 
@@ -88,6 +91,9 @@ export const useAppStore = create<StoreState>()(
             cards: s.cards,
             categories: s.categories,
             people: s.people,
+            deletedCardIds: s.deletedCardIds,
+            deletedCategoryIds: s.deletedCategoryIds,
+            deletedPersonIds: s.deletedPersonIds,
             settings: s.settings,
           };
         },
@@ -99,10 +105,14 @@ export const useAppStore = create<StoreState>()(
             cards: data.cards,
             categories: data.categories,
             people: data.people,
+            deletedCardIds: data.deletedCardIds ?? {},
+            deletedCategoryIds: data.deletedCategoryIds ?? {},
+            deletedPersonIds: data.deletedPersonIds ?? {},
             settings: data.settings,
           }),
 
         addCard: (input) => {
+          const now = Date.now();
           const card: Card = {
             id: newId(),
             type: input.type,
@@ -113,7 +123,8 @@ export const useAppStore = create<StoreState>()(
             personIds: input.personIds ?? [],
             cadence: input.cadence,
             status: 'active',
-            createdAt: Date.now(),
+            createdAt: now,
+            updatedAt: now,
             prayCount: 0,
             prayLog: [],
             order: nextOrder(get().cards),
@@ -137,6 +148,7 @@ export const useAppStore = create<StoreState>()(
               cadence: input.cadence,
               status: 'active',
               createdAt: now,
+              updatedAt: now,
               prayCount: 0,
               prayLog: [],
               order: order++,
@@ -146,10 +158,14 @@ export const useAppStore = create<StoreState>()(
 
         updateCard: (id, patch) =>
           mutate((d) => ({
-            cards: d.cards.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+            cards: d.cards.map((c) => (c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c)),
           })),
 
-        deleteCard: (id) => mutate((d) => ({ cards: d.cards.filter((c) => c.id !== id) })),
+        deleteCard: (id) =>
+          mutate((d) => ({
+            cards: d.cards.filter((c) => c.id !== id),
+            deletedCardIds: { ...d.deletedCardIds, [id]: Date.now() },
+          })),
 
         prayForCard: (id, now = Date.now()) =>
           mutate((d) => ({
@@ -158,19 +174,25 @@ export const useAppStore = create<StoreState>()(
 
         archiveCard: (id) =>
           mutate((d) => ({
-            cards: d.cards.map((c) => (c.id === id ? { ...c, status: 'archived' } : c)),
+            cards: d.cards.map((c) => (c.id === id ? { ...c, status: 'archived', updatedAt: Date.now() } : c)),
           })),
 
         unarchiveCard: (id) =>
           mutate((d) => ({
-            cards: d.cards.map((c) => (c.id === id ? { ...c, status: 'active' } : c)),
+            cards: d.cards.map((c) => (c.id === id ? { ...c, status: 'active', updatedAt: Date.now() } : c)),
           })),
 
         markAnswered: (id, note) =>
           mutate((d) => ({
             cards: d.cards.map((c) =>
               c.id === id
-                ? { ...c, status: 'answered', answeredAt: Date.now(), answeredNote: note?.trim() || undefined }
+                ? {
+                    ...c,
+                    status: 'answered',
+                    answeredAt: Date.now(),
+                    answeredNote: note?.trim() || undefined,
+                    updatedAt: Date.now(),
+                  }
                 : c,
             ),
           })),
@@ -178,13 +200,18 @@ export const useAppStore = create<StoreState>()(
         reopenCard: (id) =>
           mutate((d) => ({
             cards: d.cards.map((c) =>
-              c.id === id ? { ...c, status: 'active', answeredAt: undefined, answeredNote: undefined } : c,
+              c.id === id
+                ? { ...c, status: 'active', answeredAt: undefined, answeredNote: undefined, updatedAt: Date.now() }
+                : c,
             ),
           })),
 
         bulkArchive: (ids) => {
           const set = new Set(ids);
-          mutate((d) => ({ cards: d.cards.map((c) => (set.has(c.id) ? { ...c, status: 'archived' } : c)) }));
+          const now = Date.now();
+          mutate((d) => ({
+            cards: d.cards.map((c) => (set.has(c.id) ? { ...c, status: 'archived', updatedAt: now } : c)),
+          }));
         },
 
         bulkMarkAnswered: (ids, note) => {
@@ -193,7 +220,7 @@ export const useAppStore = create<StoreState>()(
           mutate((d) => ({
             cards: d.cards.map((c) =>
               set.has(c.id)
-                ? { ...c, status: 'answered', answeredAt: now, answeredNote: note?.trim() || c.answeredNote }
+                ? { ...c, status: 'answered', answeredAt: now, answeredNote: note?.trim() || c.answeredNote, updatedAt: now }
                 : c,
             ),
           }));
@@ -201,133 +228,102 @@ export const useAppStore = create<StoreState>()(
 
         bulkSetCategory: (ids, categoryId) => {
           const set = new Set(ids);
-          mutate((d) => ({ cards: d.cards.map((c) => (set.has(c.id) ? { ...c, categoryId } : c)) }));
+          const now = Date.now();
+          mutate((d) => ({ cards: d.cards.map((c) => (set.has(c.id) ? { ...c, categoryId, updatedAt: now } : c)) }));
         },
 
         bulkSetCadence: (ids, cadence) => {
           const set = new Set(ids);
-          mutate((d) => ({ cards: d.cards.map((c) => (set.has(c.id) ? { ...c, cadence } : c)) }));
+          const now = Date.now();
+          mutate((d) => ({ cards: d.cards.map((c) => (set.has(c.id) ? { ...c, cadence, updatedAt: now } : c)) }));
         },
 
         bulkDelete: (ids) => {
           const set = new Set(ids);
-          mutate((d) => ({ cards: d.cards.filter((c) => !set.has(c.id)) }));
+          const now = Date.now();
+          mutate((d) => {
+            const deletedCardIds = { ...d.deletedCardIds };
+            for (const id of ids) deletedCardIds[id] = now;
+            return { cards: d.cards.filter((c) => !set.has(c.id)), deletedCardIds };
+          });
         },
 
         reorderCards: (orderedIds) => {
           const orderById = new Map(orderedIds.map((id, i) => [id, i]));
+          const now = Date.now();
           mutate((d) => ({
-            cards: d.cards.map((c) => (orderById.has(c.id) ? { ...c, order: orderById.get(c.id)! } : c)),
+            cards: d.cards.map((c) => (orderById.has(c.id) ? { ...c, order: orderById.get(c.id)!, updatedAt: now } : c)),
           }));
         },
 
         addCategory: (name, color, defaultCadence) => {
-          const cat: Category = { id: newId(), name: name.trim(), color, defaultCadence };
+          const cat: Category = { id: newId(), name: name.trim(), color, defaultCadence, updatedAt: Date.now() };
           mutate((d) => ({ categories: [...d.categories, cat] }));
           return cat;
         },
 
         updateCategory: (id, patch) =>
           mutate((d) => ({
-            categories: d.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+            categories: d.categories.map((c) => (c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c)),
           })),
 
-        deleteCategory: (id) =>
+        deleteCategory: (id) => {
+          const now = Date.now();
           mutate((d) => ({
             categories: d.categories.filter((c) => c.id !== id),
             // Detach cards from the deleted category rather than deleting them.
-            cards: d.cards.map((c) => (c.categoryId === id ? { ...c, categoryId: undefined } : c)),
-          })),
+            cards: d.cards.map((c) => (c.categoryId === id ? { ...c, categoryId: undefined, updatedAt: now } : c)),
+            deletedCategoryIds: { ...d.deletedCategoryIds, [id]: now },
+          }));
+        },
 
         addPerson: (name) => {
-          const person: Person = { id: newId(), name: name.trim() };
+          const person: Person = { id: newId(), name: name.trim(), updatedAt: Date.now() };
           mutate((d) => ({ people: [...d.people, person] }));
           return person;
         },
 
         updatePerson: (id, patch) =>
           mutate((d) => ({
-            people: d.people.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+            people: d.people.map((p) => (p.id === id ? { ...p, ...patch, updatedAt: Date.now() } : p)),
           })),
 
-        deletePerson: (id) =>
+        deletePerson: (id) => {
+          const now = Date.now();
           mutate((d) => ({
             people: d.people.filter((p) => p.id !== id),
             cards: d.cards.map((c) =>
-              c.personIds.includes(id) ? { ...c, personIds: c.personIds.filter((pid) => pid !== id) } : c,
+              c.personIds.includes(id)
+                ? { ...c, personIds: c.personIds.filter((pid) => pid !== id), updatedAt: now }
+                : c,
             ),
-          })),
+            deletedPersonIds: { ...d.deletedPersonIds, [id]: now },
+          }));
+        },
 
         updateSettings: (patch) => mutate((d) => ({ settings: { ...d.settings, ...patch } })),
 
-        seedSampleData: () => {
+        seedWelcomeCard: () => {
           if (get().hasSeeded) return;
-          const family = { id: newId(), name: 'Family', color: '#f59e0b' };
-          const church = { id: newId(), name: 'Church', color: '#8b5cf6' };
-          const verses = { id: newId(), name: 'Verses', color: '#10b981' };
-          const mom: Person = { id: newId(), name: 'Mom' };
-          const friend: Person = { id: newId(), name: 'A friend' };
-
           const now = Date.now();
-          const card = (c: Partial<Card> & Pick<Card, 'title' | 'cadence' | 'type'>): Card => ({
-            id: newId(),
-            body: undefined,
+          // Fixed id (not newId()) so that if multiple fresh devices each seed this
+          // before ever linking Drive sync, merging them later collapses into one
+          // card instead of piling up a duplicate "Welcome" card per device.
+          const card: Card = {
+            id: 'welcome-card',
+            type: 'request',
+            title: 'Welcome to Prayer Cards 🙏',
+            body: 'Tap the + button below to add your first prayer request or verse. Or head to Settings → Prayer card sets to deploy a ready-made set — Names of God, a guided TACOS rhythm, prayers for your spouse, children, and more.\n\nWhen you’re ready, flip this card and tap Archive to put it away for good.',
             personIds: [],
+            cadence: { kind: 'daily' },
             status: 'active',
             createdAt: now,
+            updatedAt: now,
             prayCount: 0,
             prayLog: [],
             order: 0,
-            ...c,
-          });
-
-          set({
-            categories: [family, church, verses],
-            people: [mom, friend],
-            cards: [
-              card({
-                type: 'request',
-                title: "Mom's health",
-                body: 'Strength and peace through her treatment.',
-                categoryId: family.id,
-                personIds: [mom.id],
-                cadence: { kind: 'daily' },
-                order: 1,
-              }),
-              card({
-                type: 'request',
-                title: 'Wisdom for a big decision',
-                categoryId: family.id,
-                cadence: { kind: 'daily' },
-                order: 2,
-              }),
-              card({
-                type: 'request',
-                title: 'Our church leadership',
-                categoryId: church.id,
-                cadence: { kind: 'weekly' },
-                order: 3,
-              }),
-              card({
-                type: 'verse',
-                title: 'Do not be anxious about anything…',
-                body: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.',
-                verseRef: 'Philippians 4:6',
-                categoryId: verses.id,
-                cadence: { kind: 'daily' },
-                order: 4,
-              }),
-              card({
-                type: 'request',
-                title: 'A friend who is searching',
-                personIds: [friend.id],
-                cadence: { kind: 'weekly' },
-                order: 5,
-              }),
-            ],
-            hasSeeded: true,
-            updatedAt: now,
-          });
+          };
+          set((state) => ({ cards: [...state.cards, card], hasSeeded: true, updatedAt: now }));
         },
       };
     },
@@ -340,9 +336,27 @@ export const useAppStore = create<StoreState>()(
         cards: s.cards,
         categories: s.categories,
         people: s.people,
+        deletedCardIds: s.deletedCardIds,
+        deletedCategoryIds: s.deletedCategoryIds,
+        deletedPersonIds: s.deletedPersonIds,
         settings: s.settings,
         hasSeeded: s.hasSeeded,
       }),
+      // Backfill records saved before `updatedAt`/tombstone maps existed, so sync
+      // merge always has a real number to compare rather than `undefined`.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<StoreState>;
+        return {
+          ...current,
+          ...p,
+          cards: (p.cards ?? []).map((c) => ({ ...c, updatedAt: c.updatedAt ?? c.createdAt ?? Date.now() })),
+          categories: (p.categories ?? []).map((c) => ({ ...c, updatedAt: c.updatedAt ?? Date.now() })),
+          people: (p.people ?? []).map((person) => ({ ...person, updatedAt: person.updatedAt ?? Date.now() })),
+          deletedCardIds: p.deletedCardIds ?? {},
+          deletedCategoryIds: p.deletedCategoryIds ?? {},
+          deletedPersonIds: p.deletedPersonIds ?? {},
+        };
+      },
     },
   ),
 );

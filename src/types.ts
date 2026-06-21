@@ -19,6 +19,7 @@ export interface Card {
   cadence: Cadence;
   status: CardStatus;
   createdAt: number; // epoch ms
+  updatedAt: number; // epoch ms; bumped on every field change, used for sync merge
   lastPrayedAt?: number;
   prayCount: number;
   prayLog: number[]; // timestamps; kept lean, may be trimmed/aggregated later
@@ -32,11 +33,13 @@ export interface Category {
   name: string;
   color: string;
   defaultCadence?: Cadence;
+  updatedAt: number; // epoch ms; used for sync merge
 }
 
 export interface Person {
   id: string;
   name: string;
+  updatedAt: number; // epoch ms; used for sync merge
 }
 
 export type CadenceMode = 'calendar' | 'rolling';
@@ -51,13 +54,20 @@ export interface Settings {
   shuffleStack: boolean;
 }
 
+/** Maps a deleted record's id to when it was deleted — lets multi-device sync tell
+ * "deleted on one side" apart from "never existed on the other side" when merging. */
+export type TombstoneMap = Record<string, number>;
+
 /** The entire dataset — persisted locally and synced to Drive as one JSON blob. */
 export interface AppData {
   version: number;
-  updatedAt: number; // for sync conflict resolution (last-write-wins)
+  updatedAt: number; // last local change, used for settings merge + "anything changed" checks
   cards: Card[];
   categories: Category[];
   people: Person[];
+  deletedCardIds: TombstoneMap;
+  deletedCategoryIds: TombstoneMap;
+  deletedPersonIds: TombstoneMap;
   settings: Settings;
 }
 
@@ -70,6 +80,9 @@ export function emptyAppData(now: number = Date.now()): AppData {
     cards: [],
     categories: [],
     people: [],
+    deletedCardIds: {},
+    deletedCategoryIds: {},
+    deletedPersonIds: {},
     settings: { cadenceMode: 'calendar', theme: DEFAULT_THEME, shuffleStack: true },
   };
 }

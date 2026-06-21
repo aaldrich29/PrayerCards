@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { useAppStore } from '../store/useAppStore';
 import { isConfigured, getAccessToken, signOut } from './auth';
 import { findFile, downloadFile, createFile, updateFile, type DriveFile } from './drive';
+import { mergeAppData } from './merge';
 
 const LINKED_KEY = 'prayer-cards-linked';
 const PUSH_DEBOUNCE_MS = 3000;
@@ -69,7 +70,11 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   },
 }));
 
-/** Pull-or-push depending on which side is newer (last-write-wins). */
+/**
+ * Merge local and remote (per-record, never a blind whole-document overwrite —
+ * see `mergeAppData`), then write the merged result both ways so neither side
+ * loses data the other doesn't have.
+ */
 async function reconcile(set: (p: Partial<SyncState>) => void): Promise<void> {
   set({ status: 'syncing', error: undefined });
   const local = useAppStore.getState().getData();
@@ -84,14 +89,13 @@ async function reconcile(set: (p: Partial<SyncState>) => void): Promise<void> {
 
   fileId = remoteFile.id;
   const remote = await downloadFile(remoteFile.id);
+  const merged = mergeAppData(local, remote);
 
-  if (remote.updatedAt > local.updatedAt) {
-    suppressPush = true;
-    useAppStore.getState().replaceData(remote);
-    suppressPush = false;
-  } else if (local.updatedAt > remote.updatedAt) {
-    await pushNow();
-  }
+  suppressPush = true;
+  useAppStore.getState().replaceData(merged);
+  suppressPush = false;
+
+  await updateFile(fileId, merged);
   set({ status: 'synced', lastSyncedAt: Date.now() });
 }
 

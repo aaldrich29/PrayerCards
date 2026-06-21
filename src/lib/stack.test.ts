@@ -10,6 +10,7 @@ function makeCard(partial: Partial<Card> & { cadence: Cadence }): Card {
     personIds: [],
     status: 'active',
     createdAt: 0,
+    updatedAt: 0,
     prayCount: 0,
     prayLog: [],
     order: 0,

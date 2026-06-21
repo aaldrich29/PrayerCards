@@ -17,8 +17,9 @@ Implemented:
   whole Daily Stack, a category, or a person.
 - **Lifecycle**: archive, **Answered** box with testimony notes; per-card stats (times prayed, last
   prayed, added).
-- **Storage**: localStorage (offline-first) + optional Google Drive sync (last-write-wins) + manual
-  JSON export/import.
+- **Storage**: localStorage (offline-first) + optional Google Drive sync with per-record merge (cards/
+  categories/people merge by id, newest `updatedAt` wins, deletions are tombstoned rather than lost —
+  `src/lib/merge.ts`, unit-tested) + manual JSON export/import.
 - **Themes**: 4 themes via runtime CSS tokens (`data-theme` on `<html>`) — Midnight, Light, Sepia,
   and **Index Card** (paper stock, ruled lines, red margin line, serif card font). Picker in Settings.
 - **Stats / prayer tracking**: dedicated Stats tab — total prayers, current streak, this-week count,
@@ -40,6 +41,11 @@ Implemented:
   (starting at the tapped card) with pray/later, an Edit button, and Archive/Mark-answered on the
   card back. Bulk select can select an entire category from its header.
 - **PWA**: installable + offline. Deploys to GitHub Pages via `.github/workflows/deploy.yml`.
+- **Weighted shuffle**: optional toggle on Pray biases the deck toward cards not prayed in 90+ days
+  (or never) while still mixing in everything else, so one big preset stack doesn't dominate a session
+  (`src/lib/stack.ts:weightedShuffle`).
+- **First run**: a single instructional "Welcome" card (fixed id, so it collapses to one copy across
+  devices on first sync) instead of fake sample data — `seedWelcomeCard` in the store.
 
 ## Key architecture decisions
 
@@ -70,10 +76,12 @@ Candidate preset stacks to author next (each deployable with chosen category + c
 ## Planned next (rough priority order)
 
 ### Sync robustness
-- **Field-level / per-record merge** instead of last-write-wins, so edits on two offline devices
-  don't clobber each other. Likely a per-card `updatedAt` + merge by id.
-- Surface conflict/merge results in the UI (currently a silent last-write-wins).
+- Surface merge results in the UI (currently silent — reconcile just merges and saves with no
+  "synced N new cards from your other device" feedback).
 - Show the signed-in Google account email (add `email` scope or call userinfo).
+- Tombstones (`deletedCardIds` etc.) accumulate forever — fine at personal-app scale (a few hundred
+  entries, tiny JSON), but could prune entries once safely past every linked device's last sync if it
+  ever matters.
 
 ### Prayer experience
 - **Snooze** vs "later": optional "skip for the rest of this period" on left-swipe.
@@ -94,7 +102,6 @@ Candidate preset stacks to author next (each deployable with chosen category + c
 ### Polish / ops
 - More themes (high-contrast, OLED black, seasonal) — the token system makes new themes a small
   addition in `src/index.css` + an entry in the Settings picker.
-- Onboarding for first-run instead of seeded sample data (or a "load sample data" button).
 - **Google OAuth verification** to lift the "unverified app" warning + 100-user cap (needed only for
   wide public distribution).
 - Bundle size: code-split Framer Motion / lazy-load non-Pray views if needed.
