@@ -5,6 +5,16 @@ import { useAppStore } from '../store/useAppStore';
 import { cadenceLabel } from '../lib/cadence';
 import { formatDate, formatRelative } from '../lib/dates';
 
+/** Wrap verse text in curly quotes, unless it already carries its own quote
+ * marks anywhere — some source material quotes dialogue within the verse
+ * (sometimes after a leading verse number, e.g. `4 "Lift up your eyes...`),
+ * and adding an outer pair on top of that looks like doubled quotes. */
+function quoteVerse(text: string): string {
+  const t = text.trim();
+  if (/["“”]/.test(t)) return t;
+  return `“${t}”`;
+}
+
 interface Props {
   card: Card;
   /** When provided, the back of the card shows Archive / Mark answered actions. */
@@ -61,7 +71,7 @@ export function PrayCard({ card, actions }: Props) {
             )}
             <p className="text-xl font-semibold leading-snug">{card.title}</p>
             {card.type === 'verse' && card.body && (
-              <p className="mt-4 text-base italic leading-relaxed opacity-80">“{card.body}”</p>
+              <p className="mt-4 text-base italic leading-relaxed opacity-80">{quoteVerse(card.body)}</p>
             )}
             {card.type !== 'verse' && card.body && (
               <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed opacity-80">{card.body}</p>
