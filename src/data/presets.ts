@@ -73,13 +73,6 @@ const namesOfGod: PresetCard[] = [
   { type: 'verse', title: 'Jehovah Shalom', verseRef: 'Acts 9:31', body: 'So the church throughout all Judea and Galilee and Samaria enjoyed peace, being built up; and going on in the fear of the Lord and in the comfort of the Holy Spirit, it continued to increase.' },
   { type: 'verse', title: 'Jehovah Shalom', verseRef: 'Philippians 4:6-7', body: 'Be anxious for nothing, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. 7 And the peace of God, which surpasses all comprehension, will guard your hearts and your minds in Christ Jesus.' },
 
-  // Intercession / topical cards
-  { type: 'request', title: 'Supreme Court', body: 'John G. Roberts, Clarence Thomas, Samuel A. Alito, Sonia Sotomayor, Elena Kagan, Neil Gorsuch, Brett M. Kavanaugh, Amy Coney Barrett, Ketanji Brown Jackson' },
-  { type: 'request', title: 'Abort Abortion in America', body: 'Planned Parenthood; all pro-infanticide laws' },
-  { type: 'request', title: 'Homosexual "Marriage" in America', body: 'adultery, fornication, lesbianism, homosexuality, bisexuality, transgenderism, pedophilia, pornography, abortion' },
-  { type: 'request', title: 'Southern Baptist Convention', body: 'Pray for the presidents of: SBC Executive Committee; International Mission Board; Lifeway; Gateway Seminary; Midwestern Seminary; New Orleans Seminary; Southeastern Seminary; Southern Baptist Theological Seminary; Southwestern Seminary' },
-  { type: 'request', title: 'Memphis & Shelby County', body: 'Pastors and churches; schools; businesses/jobs; political leaders — Memphis Mayor & City Council; Shelby County Mayor and County Commissioners' },
-
   // Closing prayer verses
   { type: 'verse', title: 'The Prayer of Jabez', verseRef: '1 Chronicles 4:10', body: 'Now Jabez called on the God of Israel, saying, "Oh that You would bless me indeed and enlarge my border, and that Your hand might be with me, and that You would keep me from harm that it may not pain me!" And God granted him what he requested.' },
   { type: 'verse', title: 'God’s Plans for You', verseRef: 'Jeremiah 29:11-12', body: '‘For I know the plans that I have for you,’ declares the LORD, ‘plans for welfare and not for calamity to give you a future and a hope. 12 Then you will call upon Me and come and pray to Me, and I will listen to you.’' },
@@ -342,7 +335,7 @@ export const PRESET_STACKS: PresetStack[] = [
     id: 'steve-gaines-names-of-god',
     name: 'Steve Gaines — Names of God',
     description:
-      'The Names of God prayer cards by Steve Gaines (Bellevue Baptist): worship God through eight of His Hebrew names, with Scripture, plus cards for interceding for the nation, the church, and your city.',
+      'The Names of God prayer cards by Steve Gaines (Bellevue Baptist): worship God through eight of His Hebrew names, with Scripture for each.',
     suggestedCategory: 'Names of God',
     suggestedCadence: { kind: 'daily' },
     cards: namesOfGod,
