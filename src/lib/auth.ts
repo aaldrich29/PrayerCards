@@ -9,7 +9,8 @@ const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 // If GIS never calls back (popup lost on a mobile tab switch, etc.), don't hang forever.
-const INTERACTIVE_TIMEOUT_MS = 90_000;
+// This is now the only thing that ends a flow where popup_closed never resolves either way.
+const INTERACTIVE_TIMEOUT_MS = 30_000;
 const SILENT_TIMEOUT_MS = 15_000;
 
 interface TokenResponse {
@@ -100,17 +101,16 @@ async function getClient(): Promise<TokenClient> {
       scope: SCOPE,
       callback: () => {}, // replaced per-request below
       error_callback: (err) => {
-        // Some mobile browsers report the popup as "closed" right as it's
-        // actually delivering the real result — give the real callback a
-        // moment to still arrive before treating this as a failure. If it
-        // does, pendingReject will already be null by the time this fires.
-        const isCloseRace = err.type === 'popup_closed' || err.type === 'popup_closed_by_user';
-        const fire = () => {
-          pendingReject?.(new Error(describeGisError(err.type)));
-          pendingReject = null;
-        };
-        if (isCloseRace) setTimeout(fire, 1500);
-        else fire();
+        // Mobile Chrome often can't script-close the consent tab after a
+        // multi-step OAuth flow (closing is only allowed if the tab's history
+        // is still a single entry), so the user ends up manually switching
+        // away from it — sometimes seconds after the real token already
+        // arrived via postMessage, sometimes well after. A short grace period
+        // isn't reliable here, so don't treat this as fatal at all: let the
+        // request's own timeout (below) be the only thing that gives up.
+        if (err.type === 'popup_closed' || err.type === 'popup_closed_by_user') return;
+        pendingReject?.(new Error(describeGisError(err.type)));
+        pendingReject = null;
       },
     });
   }
