@@ -100,8 +100,17 @@ async function getClient(): Promise<TokenClient> {
       scope: SCOPE,
       callback: () => {}, // replaced per-request below
       error_callback: (err) => {
-        pendingReject?.(new Error(describeGisError(err.type)));
-        pendingReject = null;
+        // Some mobile browsers report the popup as "closed" right as it's
+        // actually delivering the real result — give the real callback a
+        // moment to still arrive before treating this as a failure. If it
+        // does, pendingReject will already be null by the time this fires.
+        const isCloseRace = err.type === 'popup_closed' || err.type === 'popup_closed_by_user';
+        const fire = () => {
+          pendingReject?.(new Error(describeGisError(err.type)));
+          pendingReject = null;
+        };
+        if (isCloseRace) setTimeout(fire, 1500);
+        else fire();
       },
     });
   }
