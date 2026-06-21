@@ -28,13 +28,17 @@ export function SyncSection() {
           fully offline using on-device storage.
         </div>
       ) : !linked ? (
-        <button
-          onClick={() => void link()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-medium text-slate-800 shadow"
-        >
-          <GoogleGlyph />
-          Sign in with Google
-        </button>
+        <div>
+          <button
+            onClick={() => void link()}
+            disabled={status === 'connecting'}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-medium text-slate-800 shadow disabled:opacity-60"
+          >
+            <GoogleGlyph />
+            {status === 'connecting' ? 'Connecting…' : 'Sign in with Google'}
+          </button>
+          {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+        </div>
       ) : (
         <div>
           <div className="flex items-center justify-between">

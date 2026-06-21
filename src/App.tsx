@@ -9,6 +9,7 @@ import { SettingsView } from './views/SettingsView';
 import { useAppStore } from './store/useAppStore';
 import { DEFAULT_THEME } from './types';
 import { initSync } from './lib/sync';
+import { preloadGis } from './lib/auth';
 
 export default function App() {
   const seedWelcomeCard = useAppStore((s) => s.seedWelcomeCard);
@@ -18,6 +19,13 @@ export default function App() {
   useEffect(() => {
     seedWelcomeCard();
   }, [seedWelcomeCard]);
+
+  // Load the Google sign-in script ahead of time so a later tap on "Sign in"
+  // fires requestAccessToken() with minimal delay (mobile popup blockers are
+  // strict about how soon after a click a popup opens).
+  useEffect(() => {
+    preloadGis();
+  }, []);
 
   // Apply the selected theme to <html> and keep the PWA theme-color in sync.
   useEffect(() => {

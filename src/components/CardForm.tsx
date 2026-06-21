@@ -23,6 +23,7 @@ export function CardForm({ card, onClose }: Props) {
   const [title, setTitle] = useState(card?.title ?? '');
   const [verseRef, setVerseRef] = useState(card?.verseRef ?? '');
   const [body, setBody] = useState(card?.body ?? '');
+  const [notes, setNotes] = useState(card?.notes ?? '');
   const [categoryId, setCategoryId] = useState<string | undefined>(card?.categoryId);
   const [personIds, setPersonIds] = useState<string[]>(card?.personIds ?? []);
   const [cadKey, setCadKey] = useState(cadenceKey(card?.cadence ?? { kind: 'daily' }));
@@ -38,12 +39,13 @@ export function CardForm({ card, onClose }: Props) {
         title: title.trim(),
         verseRef: verseRef.trim() || undefined,
         body: body.trim() || undefined,
+        notes: notes.trim() || undefined,
         categoryId,
         personIds,
         cadence,
       });
     } else {
-      addCard({ type, title, verseRef, body, categoryId, personIds, cadence });
+      addCard({ type, title, verseRef, body, notes, categoryId, personIds, cadence });
     }
     onClose();
   }
@@ -112,12 +114,22 @@ export function CardForm({ card, onClose }: Props) {
           />
         </Field>
 
-        <Field label={type === 'verse' ? 'Verse text' : 'Notes (optional)'}>
+        <Field label={type === 'verse' ? 'Verse text' : 'Details (optional)'}>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder={type === 'verse' ? 'Paste the verse text' : 'Any details or context'}
             rows={3}
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Personal notes (optional)" hint="Only ever shown on the back of the card — use it however you like.">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. when you started praying this, why it matters, who asked"
+            rows={2}
             className={inputClass}
           />
         </Field>
@@ -207,11 +219,12 @@ export function CardForm({ card, onClose }: Props) {
 const inputClass =
   'w-full rounded-xl border border-border bg-surface2 px-3 py-2.5 text-sm text-ink placeholder-faint focus:border-accent focus:outline-none';
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="mb-4 block">
       <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted">{label}</span>
       {children}
+      {hint && <span className="mt-1 block text-xs text-faint">{hint}</span>}
     </label>
   );
 }

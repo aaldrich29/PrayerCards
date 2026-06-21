@@ -50,7 +50,10 @@ export function PrayCard({ card, actions }: Props) {
             <span className="text-xs opacity-60">{cadenceLabel(card.cadence)}</span>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden py-2 text-center">
+          <div
+            className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto py-2 text-center"
+            style={{ touchAction: 'pan-y' }}
+          >
             {card.type === 'verse' && card.verseRef && (
               <div className="mb-3 text-sm font-semibold uppercase tracking-wide" style={{ color: accent }}>
                 {card.verseRef}
@@ -82,14 +85,23 @@ export function PrayCard({ card, actions }: Props) {
           className="pc-card absolute inset-0 flex flex-col rounded-3xl border border-border p-6 shadow-2xl"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
-          <h3 className="text-sm font-semibold uppercase tracking-wide opacity-60">Notes</h3>
-          <div className="mt-2 flex-1 overflow-y-auto">
+          <h3 className="text-sm font-semibold uppercase tracking-wide opacity-60">
+            {card.type === 'verse' ? 'Verse' : 'Details'}
+          </h3>
+          <div className="mt-2 flex-1 overflow-y-auto" style={{ touchAction: 'pan-y' }}>
             {card.body ? (
               <p className={`whitespace-pre-wrap text-base leading-relaxed ${card.type === 'verse' ? 'italic' : ''}`}>
                 {card.body}
               </p>
-            ) : (
+            ) : !card.notes ? (
               <p className="text-sm opacity-50">No notes yet.</p>
+            ) : null}
+
+            {card.notes && (
+              <div className={card.body ? 'mt-4 border-t border-border pt-3' : ''}>
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide opacity-50">My notes</h4>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed opacity-90">{card.notes}</p>
+              </div>
             )}
           </div>
 

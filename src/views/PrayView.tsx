@@ -128,7 +128,7 @@ export function PrayView() {
             <div className="mb-2 text-center text-sm text-muted">
               {initialCount - queue.length + 1} of {initialCount}
             </div>
-            <div className="relative mx-auto h-[26rem] w-full max-w-sm">
+            <div className="relative mx-auto h-[30rem] w-full max-w-sm">
               <SwipeDeck
                 cards={queue}
                 onPray={handlePray}
@@ -148,10 +148,10 @@ export function PrayView() {
       {/* Quick-add a card without leaving Pray */}
       <button
         onClick={() => setCreating(true)}
-        className="safe-bottom fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-3xl text-accentink shadow-lg"
+        className="safe-bottom fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-3xl leading-none text-accentink shadow-lg"
         aria-label="Add card"
       >
-        +
+        <span className="mt-0.5">+</span>
       </button>
 
       {creating && <CardForm onClose={() => setCreating(false)} />}

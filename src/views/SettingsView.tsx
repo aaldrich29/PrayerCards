@@ -21,12 +21,19 @@ export function SettingsView() {
   const cards = useAppStore((s) => s.cards);
   const unarchiveCard = useAppStore((s) => s.unarchiveCard);
   const deleteCard = useAppStore((s) => s.deleteCard);
+  const people = useAppStore((s) => s.people);
+  const deletePerson = useAppStore((s) => s.deletePerson);
   const getData = useAppStore((s) => s.getData);
   const replaceData = useAppStore((s) => s.replaceData);
   const fileRef = useRef<HTMLInputElement>(null);
   const [deploying, setDeploying] = useState<PresetStack | null>(null);
 
   const archived = cards.filter((c) => c.status === 'archived');
+  const cardCountByPerson = new Map<string, number>();
+  for (const c of cards) {
+    if (c.status !== 'active') continue;
+    for (const id of c.personIds) cardCountByPerson.set(id, (cardCountByPerson.get(id) ?? 0) + 1);
+  }
 
   function exportJson() {
     const data = getData();
@@ -175,6 +182,38 @@ export function SettingsView() {
               }}
             />
           </div>
+        </Section>
+
+        <Section title={`People (${people.length})`}>
+          {people.length === 0 ? (
+            <p className="text-sm text-faint">No people yet — add one from a card's People field.</p>
+          ) : (
+            <ul className="space-y-2">
+              {people.map((p) => {
+                const count = cardCountByPerson.get(p.id) ?? 0;
+                return (
+                  <li key={p.id} className="flex items-center justify-between rounded-xl bg-surface2 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-ink">{p.name}</p>
+                      <p className="text-xs text-faint">{count} active card{count === 1 ? '' : 's'}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const msg =
+                          count > 0
+                            ? `Delete ${p.name}? ${count} card${count === 1 ? '' : 's'} will be unassigned (not deleted).`
+                            : `Delete ${p.name}?`;
+                        if (confirm(msg)) deletePerson(p.id);
+                      }}
+                      className="shrink-0 text-xs text-red-500"
+                    >
+                      Delete
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </Section>
 
         <Section title={`Archived (${archived.length})`}>

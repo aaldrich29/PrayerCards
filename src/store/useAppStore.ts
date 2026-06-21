@@ -9,6 +9,7 @@ export interface NewCardInput {
   type: CardType;
   title: string;
   body?: string;
+  notes?: string;
   verseRef?: string;
   categoryId?: string;
   personIds?: string[];
@@ -80,7 +81,7 @@ export const useAppStore = create<StoreState>()(
         deletedCardIds: {},
         deletedCategoryIds: {},
         deletedPersonIds: {},
-        settings: { cadenceMode: 'calendar', theme: 'midnight', shuffleStack: true },
+        settings: { cadenceMode: 'calendar', theme: 'sepia', shuffleStack: true },
         hasSeeded: false,
 
         getData: () => {
@@ -118,6 +119,7 @@ export const useAppStore = create<StoreState>()(
             type: input.type,
             title: input.title.trim(),
             body: input.body?.trim() || undefined,
+            notes: input.notes?.trim() || undefined,
             verseRef: input.verseRef?.trim() || undefined,
             categoryId: input.categoryId,
             personIds: input.personIds ?? [],
@@ -142,6 +144,7 @@ export const useAppStore = create<StoreState>()(
               type: input.type,
               title: input.title.trim(),
               body: input.body?.trim() || undefined,
+              notes: input.notes?.trim() || undefined,
               verseRef: input.verseRef?.trim() || undefined,
               categoryId: input.categoryId,
               personIds: input.personIds ?? [],

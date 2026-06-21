@@ -12,7 +12,8 @@ export interface Card {
   id: string;
   type: CardType;
   title: string; // front of the card
-  body?: string; // details / notes (back of the card)
+  body?: string; // verse text / request details (shown on front and back)
+  notes?: string; // private notes — only ever shown on the back of the card
   verseRef?: string; // e.g. "Phil 4:6-7" for verse cards
   categoryId?: string;
   personIds: string[];
@@ -46,7 +47,7 @@ export type CadenceMode = 'calendar' | 'rolling';
 
 export type ThemeName = 'midnight' | 'light' | 'sepia' | 'paper';
 
-export const DEFAULT_THEME: ThemeName = 'midnight';
+export const DEFAULT_THEME: ThemeName = 'sepia';
 
 export interface Settings {
   cadenceMode: CadenceMode;

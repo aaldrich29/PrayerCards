@@ -42,10 +42,14 @@ export function CardsView() {
   const [reorderMode, setReorderMode] = useState(false);
 
   const peopleById = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
+  const active = useMemo(() => cards.filter((c) => c.status === 'active'), [cards]);
+  // Only people with at least one active card are useful to filter by.
+  const filterablePeople = useMemo(() => {
+    const ids = new Set(active.flatMap((c) => c.personIds));
+    return people.filter((p) => ids.has(p.id));
+  }, [active, people]);
 
   const hasFilters = !!search.trim() || fCategory !== 'all' || fPerson !== 'all' || fType !== 'all' || fCadence !== 'all';
-
-  const active = useMemo(() => cards.filter((c) => c.status === 'active'), [cards]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -208,7 +212,7 @@ export function CardsView() {
               </FilterSelect>
               <FilterSelect value={fPerson} onChange={setFPerson} label="Person">
                 <option value="all">Anyone</option>
-                {people.map((p) => (
+                {filterablePeople.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
@@ -315,10 +319,10 @@ export function CardsView() {
       {!selectMode && !reorderMode && (
         <button
           onClick={() => setCreating(true)}
-          className="safe-bottom fixed bottom-24 left-1/2 z-40 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-accent text-3xl text-accentink shadow-lg"
+          className="safe-bottom fixed bottom-24 left-1/2 z-40 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-accent text-3xl leading-none text-accentink shadow-lg"
           aria-label="Add card"
         >
-          +
+          <span className="mt-0.5">+</span>
         </button>
       )}
 

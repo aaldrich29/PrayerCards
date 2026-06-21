@@ -76,7 +76,7 @@ export function CardDeck({ title, cardIds, startIndex, onClose }: Props) {
             <div className="mb-2 text-center text-sm text-muted">
               {total - queue.length + 1} of {total}
             </div>
-            <div className="relative mx-auto h-[26rem] w-full max-w-sm">
+            <div className="relative mx-auto h-[30rem] w-full max-w-sm">
               <SwipeDeck
                 cards={queue}
                 onPray={(c) => {
