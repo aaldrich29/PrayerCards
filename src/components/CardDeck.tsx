@@ -89,6 +89,7 @@ export function CardDeck({ title, cardIds, startIndex, onClose }: Props) {
                   drop(c.id);
                 }}
                 onAnswer={(c) => setAnswering(c)}
+                onEdit={(c) => setEditing(c)}
               />
             </div>
             <div className="mt-5 flex items-center justify-center gap-10 text-xs text-faint">

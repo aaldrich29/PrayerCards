@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Card } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -33,6 +33,7 @@ export function PrayView() {
   const [prayedCount, setPrayedCount] = useState(0);
   const [sessionKey, setSessionKey] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Card | null>(null);
   const [answering, setAnswering] = useState<Card | null>(null);
 
   const filter = useMemo(() => {
@@ -41,18 +42,47 @@ export function PrayView() {
     return undefined;
   }, [scope]);
 
-  // Snapshot the stack when the scope changes, a session restarts, or the set of
-  // cards changes (add/delete/first-run seed). Praying only updates a card's
-  // lastPrayedAt — not the count — so the deck stays stable mid-session.
+  // Tracks the last "session" inputs so the effect below can tell a genuine
+  // session change (rebuild + reshuffle) apart from a mere card-set change
+  // (reconcile in place). Also remembers every id seen this session so we don't
+  // re-add cards the user already prayed or skipped.
+  const sessionDeps = useRef<{ filter: typeof filter; mode: typeof mode; shuffle: boolean; sessionKey: number } | null>(null);
+  const seenIds = useRef<Set<string>>(new Set());
+
+  // Build the stack when the scope changes, a session restarts, or shuffle is
+  // toggled. When only the card set changes (e.g. you add or edit a card without
+  // leaving Pray, or the first-run seed lands), reconcile in place instead:
+  // append newly-due cards to the end and drop ones that are gone, so the card
+  // you're looking at stays put rather than reshuffling.
   useEffect(() => {
+    const prev = sessionDeps.current;
+    const sessionChanged =
+      !prev || prev.filter !== filter || prev.mode !== mode || prev.shuffle !== shuffle || prev.sessionKey !== sessionKey;
+    sessionDeps.current = { filter, mode, shuffle, sessionKey };
+
     const raw = buildStack({ cards, now: Date.now(), mode, filter });
-    const stack = shuffle ? weightedShuffle(raw, Date.now()) : raw;
-    setQueue(stack);
-    setSessionIds(stack.map((c) => c.id));
-    setInitialCount(stack.length);
-    setPrayedCount(0);
+
+    if (sessionChanged) {
+      const stack = shuffle ? weightedShuffle(raw, Date.now()) : raw;
+      seenIds.current = new Set(stack.map((c) => c.id));
+      setQueue(stack);
+      setSessionIds(stack.map((c) => c.id));
+      setInitialCount(stack.length);
+      setPrayedCount(0);
+      return;
+    }
+
+    const activeIds = new Set(cards.filter((c) => c.status === 'active').map((c) => c.id));
+    const fresh = raw.filter((c) => !seenIds.current.has(c.id));
+    fresh.forEach((c) => seenIds.current.add(c.id));
+
+    setQueue((q) => [...q.filter((c) => activeIds.has(c.id)), ...fresh]);
+    if (fresh.length) {
+      setSessionIds((ids) => [...ids, ...fresh.map((c) => c.id)]);
+      setInitialCount((n) => n + fresh.length);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, mode, shuffle, sessionKey, cards.length]);
+  }, [filter, mode, shuffle, sessionKey, cards]);
 
   function handlePray(card: Card) {
     prayForCard(card.id);
@@ -135,6 +165,7 @@ export function PrayView() {
                 onSkip={handleSkip}
                 onArchive={handleArchive}
                 onAnswer={(card) => setAnswering(card)}
+                onEdit={(card) => setEditing(card)}
               />
             </div>
             <div className="mt-5 flex items-center justify-center gap-10 text-xs text-faint">
@@ -155,6 +186,7 @@ export function PrayView() {
       </button>
 
       {creating && <CardForm onClose={() => setCreating(false)} />}
+      {editing && <CardForm card={editing} onClose={() => setEditing(null)} />}
       {answering && (
         <NoteDialog
           title="Mark as answered"

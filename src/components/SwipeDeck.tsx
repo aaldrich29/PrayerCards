@@ -16,6 +16,7 @@ interface Props {
   onSkip: (card: Card) => void;
   onArchive: (card: Card) => void;
   onAnswer: (card: Card) => void;
+  onEdit: (card: Card) => void;
 }
 
 const SWIPE_THRESHOLD = 120;
@@ -31,7 +32,7 @@ function DraggableCard({
   card: Card;
   onPray: () => void;
   onSkip: () => void;
-  actions: { onArchive: () => void; onAnswer: () => void };
+  actions: { onArchive: () => void; onAnswer: () => void; onEdit: () => void };
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-220, 220], [-14, 14]);
@@ -72,7 +73,7 @@ function DraggableCard({
   );
 }
 
-export function SwipeDeck({ cards, onPray, onSkip, onArchive, onAnswer }: Props) {
+export function SwipeDeck({ cards, onPray, onSkip, onArchive, onAnswer, onEdit }: Props) {
   const [dir, setDir] = useState(1);
   const front = cards[0];
   const next = cards[1];
@@ -99,7 +100,7 @@ export function SwipeDeck({ cards, onPray, onSkip, onArchive, onAnswer }: Props)
               setDir(-1);
               onSkip(front);
             }}
-            actions={{ onArchive: () => onArchive(front), onAnswer: () => onAnswer(front) }}
+            actions={{ onArchive: () => onArchive(front), onAnswer: () => onAnswer(front), onEdit: () => onEdit(front) }}
           />
         )}
       </AnimatePresence>

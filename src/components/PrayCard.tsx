@@ -17,8 +17,9 @@ function quoteVerse(text: string): string {
 
 interface Props {
   card: Card;
-  /** When provided, the back of the card shows Archive / Mark answered actions. */
-  actions?: { onArchive: () => void; onAnswer: () => void };
+  /** When provided, the back of the card shows Archive / Mark answered actions
+   * (and an Edit button when `onEdit` is supplied). */
+  actions?: { onArchive: () => void; onAnswer: () => void; onEdit?: () => void };
 }
 
 /** A single prayer card with a tap-to-flip front (request/verse) and back (notes + stats). */
@@ -95,9 +96,22 @@ export function PrayCard({ card, actions }: Props) {
           className="pc-card absolute inset-0 flex flex-col rounded-3xl border border-border p-6 shadow-2xl"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
-          <h3 className="text-sm font-semibold uppercase tracking-wide opacity-60">
-            {card.type === 'verse' ? 'Verse' : 'Details'}
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-wide opacity-60">
+              {card.type === 'verse' ? 'Verse' : 'Details'}
+            </h3>
+            {actions?.onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  actions.onEdit!();
+                }}
+                className="text-xs font-medium text-accent"
+              >
+                Edit
+              </button>
+            )}
+          </div>
           <div className="mt-2 flex-1 overflow-y-auto" style={{ touchAction: 'pan-y' }}>
             {card.body ? (
               <p className={`whitespace-pre-wrap text-base leading-relaxed ${card.type === 'verse' ? 'italic' : ''}`}>
