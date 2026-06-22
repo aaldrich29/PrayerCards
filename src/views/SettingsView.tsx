@@ -6,6 +6,7 @@ import { formatDate } from '../lib/dates';
 import { SyncSection } from '../components/SyncSection';
 import { PRESET_STACKS, type PresetStack } from '../data/presets';
 import { PresetDeployDialog } from '../components/PresetDeployDialog';
+import { InstallSettings } from '../components/InstallPrompt';
 
 const THEMES: { name: ThemeName; label: string; bg: string; card: string; accent: string; rule?: string }[] = [
   { name: 'midnight', label: 'Midnight', bg: '#0f172a', card: '#1e293b', accent: '#6366f1' },
@@ -112,6 +113,10 @@ export function SettingsView() {
               </button>
             ))}
           </div>
+        </Section>
+
+        <Section title="Install app">
+          <InstallSettings />
         </Section>
 
         <Section title="Prayer card sets">
