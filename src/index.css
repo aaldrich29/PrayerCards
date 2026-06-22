@@ -126,9 +126,15 @@ body {
   transition: background-color 0.3s ease;
 }
 
-/* Respect iOS safe areas (notch / home indicator). */
+/*
+ * Respect iOS safe areas (notch / home indicator). These also override any
+ * Tailwind pt-*/pb-* utility on the same element (unlayered CSS beats the
+ * utilities layer), so they carry a base amount of padding on top of the
+ * safe-area inset — otherwise headers/buttons sit flush against the edge on
+ * devices that report a 0px inset.
+ */
 .safe-top {
-  padding-top: env(safe-area-inset-top);
+  padding-top: calc(env(safe-area-inset-top) + 1rem);
 }
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);

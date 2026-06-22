@@ -72,7 +72,8 @@ export function CardForm({ card, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={onClose}>
       <div
-        className="safe-bottom max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-border bg-bg p-5"
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-border bg-bg p-5"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 2rem)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-border" />

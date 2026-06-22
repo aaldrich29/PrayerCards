@@ -35,7 +35,10 @@ export function CardsView() {
   const [fType, setFType] = useState<'all' | 'request' | 'verse'>('all');
   const [fCadence, setFCadence] = useState<CadenceFilter>('all');
   const [sort, setSort] = useState<Sort>('manual');
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // Start with every category collapsed so the page opens as a tidy overview.
+  const [collapsed, setCollapsed] = useState<Set<string>>(
+    () => new Set([UNCATEGORIZED, ...categories.map((c) => c.id)]),
+  );
 
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
