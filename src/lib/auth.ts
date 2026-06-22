@@ -5,7 +5,10 @@
  * user's Drive that the app can read/write but is invisible in their Drive UI.
  */
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+// Trim defensively: a stray trailing newline/space in the env value (a common
+// CI-secret gotcha) survives into URL params as %0A and makes Google reject the
+// request with invalid_client ("OAuth client was not found").
+const CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim();
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 // If GIS never calls back (popup lost on a mobile tab switch, etc.), don't hang forever.
