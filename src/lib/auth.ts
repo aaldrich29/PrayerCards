@@ -13,6 +13,18 @@ const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const INTERACTIVE_TIMEOUT_MS = 30_000;
 const SILENT_TIMEOUT_MS = 15_000;
 
+// --- Redirect (implicit) flow, used on mobile / installed PWAs ---------------
+// The GIS popup token model can't reliably deliver a token back to a standalone
+// PWA or a mobile browser tab (the consent screen opens in a separate context
+// and the postMessage with the token never reaches the waiting page). For those
+// we instead navigate the page itself to Google's OAuth endpoint and read the
+// token out of the URL fragment when Google redirects us back — same browsing
+// context, so the token always comes home.
+const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
+// Survives the round-trip to accounts.google.com and back (localStorage, not
+// sessionStorage, so it also survives a PWA process restart mid-flow).
+const OAUTH_STATE_KEY = 'prayer-cards-oauth-state';
+
 interface TokenResponse {
   access_token: string;
   expires_in: number;
@@ -168,6 +180,97 @@ export function getAccessToken(interactive: boolean): Promise<string> {
   // configured until just now) — fall back to the async path. This is one
   // tick removed from the click, but only hit on a true first-ever attempt.
   return getClient().then((client) => requestToken(client, interactive));
+}
+
+/**
+ * The exact URL Google redirects back to after consent. Must be registered as
+ * an "Authorized redirect URI" on the OAuth client. It is the app's own base
+ * URL (origin + Vite base path), e.g. https://<user>.github.io/PrayerCards/.
+ */
+function redirectUri(): string {
+  return window.location.origin + import.meta.env.BASE_URL;
+}
+
+function isStandalonePwa(): boolean {
+  return (
+    window.matchMedia?.('(display-mode: standalone)').matches === true ||
+    // iOS Safari's non-standard standalone flag.
+    (window.navigator as unknown as { standalone?: boolean }).standalone === true
+  );
+}
+
+function isMobile(): boolean {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+/**
+ * Whether interactive sign-in should use the full-page redirect flow instead of
+ * the GIS popup. True for installed PWAs and mobile browsers, where the popup
+ * token model fails to return a token; false on desktop, where the popup works
+ * and is the nicer UX.
+ */
+export function shouldUseRedirect(): boolean {
+  return isStandalonePwa() || isMobile();
+}
+
+/**
+ * Navigate the page to Google's OAuth consent screen (implicit flow). This does
+ * not return — the browser leaves the app. When Google redirects back,
+ * consumeRedirectResult() picks the token out of the URL fragment on load.
+ */
+export function beginRedirectSignIn(): void {
+  if (!isConfigured()) throw new Error('Google sign-in is not configured (missing VITE_GOOGLE_CLIENT_ID).');
+  // CSRF guard: a random nonce we echo through `state` and verify on return.
+  const state = crypto.randomUUID();
+  localStorage.setItem(OAUTH_STATE_KEY, state);
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID!,
+    redirect_uri: redirectUri(),
+    response_type: 'token',
+    scope: SCOPE,
+    include_granted_scopes: 'true',
+    state,
+    prompt: 'consent',
+  });
+  window.location.assign(`${AUTH_ENDPOINT}?${params}`);
+}
+
+export interface RedirectResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * If the current page load is a return from beginRedirectSignIn(), consume the
+ * token (or error) from the URL fragment, store it, and strip it from the URL.
+ * Returns null when this isn't an OAuth redirect return so the caller can fall
+ * through to its normal startup path.
+ */
+export function consumeRedirectResult(): RedirectResult | null {
+  const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  const hasToken = params.has('access_token');
+  const hasError = params.has('error');
+  if (!hasToken && !hasError) return null;
+
+  // Always clear the one-time state and scrub the fragment from the URL/history,
+  // regardless of outcome, so a token never lingers in the address bar.
+  const expectedState = localStorage.getItem(OAUTH_STATE_KEY);
+  localStorage.removeItem(OAUTH_STATE_KEY);
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+
+  if (params.get('state') !== expectedState || !expectedState) {
+    return { ok: false, error: 'Sign-in could not be verified. Please try again.' };
+  }
+  if (hasError) {
+    return { ok: false, error: describeGisError(params.get('error') || 'unknown') };
+  }
+
+  accessToken = params.get('access_token');
+  const expiresIn = Number(params.get('expires_in')) || 3600;
+  tokenExpiry = Date.now() + expiresIn * 1000;
+  return { ok: true };
 }
 
 export function signOut(): void {
