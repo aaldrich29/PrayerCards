@@ -5,10 +5,13 @@
  * user's Drive that the app can read/write but is invisible in their Drive UI.
  */
 
-// Trim defensively: a stray trailing newline/space in the env value (a common
-// CI-secret gotcha) survives into URL params as %0A and makes Google reject the
-// request with invalid_client ("OAuth client was not found").
-const CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim();
+// A Google client_id only ever contains [0-9A-Za-z._-]. Strip anything else
+// (stray whitespace, a BOM, or a zero-width space — common when the value is
+// pasted into a CI secret): such an invisible character travels into the OAuth
+// request as e.g. %E2%80%8B and makes Google reject it with invalid_client
+// ("OAuth client was not found"). .trim() alone misses zero-width characters.
+const CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.replace(/[^0-9A-Za-z._-]/g, '') || undefined;
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 // If GIS never calls back (popup lost on a mobile tab switch, etc.), don't hang forever.
@@ -65,6 +68,42 @@ let tokenExpiry = 0; // epoch ms
 // initTokenClient's error_callback is set once, not per-request, so route it to
 // whichever request is currently in flight.
 let pendingReject: ((e: Error) => void) | null = null;
+
+// Persist the access token across reloads so reopening the app within the
+// token's ~1h lifetime reuses it instead of re-asking Google — otherwise every
+// page load fires a "silent" token request that still briefly flashes the auth
+// UI on mobile. The token is short-lived and scoped to drive.appdata (this
+// app's private folder only).
+const TOKEN_KEY = 'prayer-cards-token';
+
+function persistToken(): void {
+  try {
+    if (accessToken) localStorage.setItem(TOKEN_KEY, JSON.stringify({ token: accessToken, expiry: tokenExpiry }));
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* storage unavailable (private mode quota, etc.) — fall back to memory-only */
+  }
+}
+
+function loadPersistedToken(): void {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    if (!raw) return;
+    const { token, expiry } = JSON.parse(raw) as { token?: unknown; expiry?: unknown };
+    // Only adopt a token with real life left; getAccessToken treats the last
+    // 60s as already-expired, so match that here.
+    if (typeof token === 'string' && typeof expiry === 'number' && Date.now() < expiry - 60_000) {
+      accessToken = token;
+      tokenExpiry = expiry;
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch {
+    /* ignore malformed/blocked storage */
+  }
+}
+
+loadPersistedToken();
 
 export function isConfigured(): boolean {
   return typeof CLIENT_ID === 'string' && CLIENT_ID.length > 0;
@@ -156,6 +195,7 @@ function requestToken(client: TokenClient, interactive: boolean): Promise<string
       if (resp.error) return reject(new Error(resp.error_description || resp.error));
       accessToken = resp.access_token;
       tokenExpiry = Date.now() + resp.expires_in * 1000;
+      persistToken();
       resolve(accessToken);
     };
     // Called synchronously by the caller when possible — see getAccessToken.
@@ -273,6 +313,7 @@ export function consumeRedirectResult(): RedirectResult | null {
   accessToken = params.get('access_token');
   const expiresIn = Number(params.get('expires_in')) || 3600;
   tokenExpiry = Date.now() + expiresIn * 1000;
+  persistToken();
   return { ok: true };
 }
 
@@ -282,4 +323,5 @@ export function signOut(): void {
   }
   accessToken = null;
   tokenExpiry = 0;
+  persistToken();
 }
