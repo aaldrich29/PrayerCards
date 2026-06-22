@@ -71,13 +71,17 @@ function loadGis(): Promise<void> {
 }
 
 /**
- * Start loading the GIS script ahead of a sign-in tap. Mobile browsers are far
- * stricter than desktop about treating a popup as user-initiated the longer it's
- * delayed after the click — preloading keeps requestAccessToken() close to the
- * tap instead of waiting on a script fetch first.
+ * Load the GIS script and create the token client ahead of a sign-in tap.
+ * Mobile browsers are far stricter than desktop about treating window.open()
+ * as user-initiated the longer/more-removed it is from the click — even a
+ * single microtask hop (an already-resolved `await`) can be enough for some
+ * of them to stop counting it as a real user gesture. Doing all the async
+ * setup ahead of time means getAccessToken() can call requestAccessToken()
+ * fully synchronously within the click handler's own call stack once this
+ * has resolved.
  */
 export function preloadGis(): void {
-  if (isConfigured()) void loadGis().catch(() => {});
+  if (isConfigured()) void getClient().catch(() => {});
 }
 
 function describeGisError(type: string): string {
@@ -117,45 +121,53 @@ async function getClient(): Promise<TokenClient> {
   return tokenClient;
 }
 
+function requestToken(client: TokenClient, interactive: boolean): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => {
+        pendingReject = null;
+        reject(new Error("Sign-in didn't complete. Please try again."));
+      },
+      interactive ? INTERACTIVE_TIMEOUT_MS : SILENT_TIMEOUT_MS,
+    );
+
+    pendingReject = (e) => {
+      clearTimeout(timer);
+      reject(e);
+    };
+    client.callback = (resp) => {
+      clearTimeout(timer);
+      pendingReject = null;
+      if (resp.error) return reject(new Error(resp.error_description || resp.error));
+      accessToken = resp.access_token;
+      tokenExpiry = Date.now() + resp.expires_in * 1000;
+      resolve(accessToken);
+    };
+    // Called synchronously by the caller when possible — see getAccessToken.
+    client.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+  });
+}
+
 /**
  * Get a valid access token. With interactive=false GIS tries to obtain a token
  * without UI (works if the user previously granted access in this browser).
+ *
+ * When the client is already initialized (preloadGis() ran earlier and
+ * resolved), this calls requestAccessToken() synchronously in the caller's
+ * own call stack — no await, not even a microtask — so a click handler that
+ * calls this directly keeps the popup tied to the original user gesture as
+ * tightly as this API allows.
  */
 export function getAccessToken(interactive: boolean): Promise<string> {
-  return new Promise((resolve, reject) => {
-    void (async () => {
-      try {
-        // Reuse a still-valid token (60s safety margin).
-        if (accessToken && Date.now() < tokenExpiry - 60_000) return resolve(accessToken);
+  // Reuse a still-valid token — no popup needed at all.
+  if (accessToken && Date.now() < tokenExpiry - 60_000) return Promise.resolve(accessToken);
 
-        const client = await getClient();
+  if (tokenClient) return requestToken(tokenClient, interactive);
 
-        const timer = setTimeout(
-          () => {
-            pendingReject = null;
-            reject(new Error("Sign-in didn't complete. Please try again."));
-          },
-          interactive ? INTERACTIVE_TIMEOUT_MS : SILENT_TIMEOUT_MS,
-        );
-
-        pendingReject = (e) => {
-          clearTimeout(timer);
-          reject(e);
-        };
-        client.callback = (resp) => {
-          clearTimeout(timer);
-          pendingReject = null;
-          if (resp.error) return reject(new Error(resp.error_description || resp.error));
-          accessToken = resp.access_token;
-          tokenExpiry = Date.now() + resp.expires_in * 1000;
-          resolve(accessToken);
-        };
-        client.requestAccessToken({ prompt: interactive ? 'consent' : '' });
-      } catch (e) {
-        reject(e instanceof Error ? e : new Error(String(e)));
-      }
-    })();
-  });
+  // Not preloaded yet (e.g. preloadGis() hasn't resolved, or sync isn't
+  // configured until just now) — fall back to the async path. This is one
+  // tick removed from the click, but only hit on a true first-ever attempt.
+  return getClient().then((client) => requestToken(client, interactive));
 }
 
 export function signOut(): void {
