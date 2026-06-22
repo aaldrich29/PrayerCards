@@ -6,7 +6,14 @@
  */
 import { create } from 'zustand';
 import { useAppStore } from '../store/useAppStore';
-import { isConfigured, getAccessToken, signOut } from './auth';
+import {
+  isConfigured,
+  getAccessToken,
+  signOut,
+  shouldUseRedirect,
+  beginRedirectSignIn,
+  consumeRedirectResult,
+} from './auth';
 import { findFile, downloadFile, createFile, updateFile, type DriveFile } from './drive';
 import { mergeAppData } from './merge';
 
@@ -43,7 +50,15 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     }
     set({ status: 'connecting', error: undefined });
     try {
-      await getAccessToken(true); // interactive popup
+      // On mobile / installed PWAs the popup token flow can't return a token
+      // reliably, so leave the page for Google's consent screen instead. This
+      // navigates away and does not resume here — completeRedirectSignIn() picks
+      // things back up after Google redirects us home. See lib/auth.ts.
+      if (shouldUseRedirect()) {
+        beginRedirectSignIn();
+        return;
+      }
+      await getAccessToken(true); // interactive popup (desktop)
       localStorage.setItem(LINKED_KEY, '1');
       set({ linked: true });
       await reconcile(set);
@@ -128,6 +143,30 @@ function startAutoPush() {
   useAppStore.subscribe((state, prev) => {
     if (state.updatedAt !== prev.updatedAt) schedulePush();
   });
+}
+
+/**
+ * Called once on app start, before initSync. If this load is a return from the
+ * redirect sign-in flow, finish linking: the token is already stored by
+ * consumeRedirectResult(), so just mark linked and reconcile. Returns true when
+ * it handled a redirect return (so the caller skips the normal silent reconnect).
+ */
+export async function completeRedirectSignIn(): Promise<boolean> {
+  const result = consumeRedirectResult();
+  if (!result) return false;
+  if (!result.ok) {
+    useSyncStore.setState({ status: 'error', error: result.error ?? 'Sign-in failed.' });
+    return true;
+  }
+  localStorage.setItem(LINKED_KEY, '1');
+  useSyncStore.setState({ linked: true });
+  try {
+    await reconcile((p) => useSyncStore.setState(p));
+    startAutoPush();
+  } catch (e) {
+    useSyncStore.setState({ status: 'error', error: errMsg(e) });
+  }
+  return true;
 }
 
 /** Called once on app start: silently reconnect if previously linked. */

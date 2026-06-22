@@ -8,7 +8,7 @@ import { StatsView } from './views/StatsView';
 import { SettingsView } from './views/SettingsView';
 import { useAppStore } from './store/useAppStore';
 import { DEFAULT_THEME } from './types';
-import { initSync } from './lib/sync';
+import { initSync, completeRedirectSignIn } from './lib/sync';
 import { preloadGis } from './lib/auth';
 
 export default function App() {
@@ -35,9 +35,13 @@ export default function App() {
     if (themeColor && meta) meta.setAttribute('content', themeColor);
   }, [theme]);
 
-  // If the user previously linked Google Drive, silently reconnect and sync.
+  // On start: if we're returning from the redirect sign-in flow, finish linking;
+  // otherwise, if previously linked, silently reconnect and sync.
   useEffect(() => {
-    void initSync();
+    void (async () => {
+      const handledRedirect = await completeRedirectSignIn();
+      if (!handledRedirect) void initSync();
+    })();
   }, []);
 
   return (
