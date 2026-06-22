@@ -5,10 +5,13 @@
  * user's Drive that the app can read/write but is invisible in their Drive UI.
  */
 
-// Trim defensively: a stray trailing newline/space in the env value (a common
-// CI-secret gotcha) survives into URL params as %0A and makes Google reject the
-// request with invalid_client ("OAuth client was not found").
-const CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim();
+// A Google client_id only ever contains [0-9A-Za-z._-]. Strip anything else
+// (stray whitespace, a BOM, or a zero-width space — common when the value is
+// pasted into a CI secret): such an invisible character travels into the OAuth
+// request as e.g. %E2%80%8B and makes Google reject it with invalid_client
+// ("OAuth client was not found"). .trim() alone misses zero-width characters.
+const CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.replace(/[^0-9A-Za-z._-]/g, '') || undefined;
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 // If GIS never calls back (popup lost on a mobile tab switch, etc.), don't hang forever.
